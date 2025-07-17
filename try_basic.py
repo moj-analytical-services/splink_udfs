@@ -46,4 +46,4 @@ def compare_soundex(input_str):
 
 
 # Test cases
-compare_soundex("Robin")
+compare_soundex("Robert")
