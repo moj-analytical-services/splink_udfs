@@ -4,7 +4,6 @@
 
 namespace duckdb {
 
-// Your extension class (must match the name used in the .cpp)
 class SplinkUdfsExtension : public Extension {
 public:
 	// Called when the extension is loaded into a DuckDB instance
