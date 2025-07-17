@@ -1,86 +1,68 @@
-# SplinkUdfs
+# Splink UDFs Extension for DuckDB
 
-This repository is based on https://github.com/duckdb/extension-template, check it out if you want to build and ship your own DuckDB extension.
+The `splink_udfs` extension is work in progress.  It aims to offer a variety of functions that are useful for the purpose of data linkage, beginning with support for the [Soundex](https://en.wikipedia.org/wiki/Soundex) algorithm. This allows similarity matching of names and other words based on how they sound, rather than how they are spelled.
 
----
+This repo is based on the [DuckDB Extension Template](https://github.com/duckdb/extension-template)
+## Installation
 
-This extension, SplinkUdfs, allow you to ... <extension_goal>.
+This is a custom DuckDB extension and not (yet) part of the official community extensions.
 
+Once built and compiled locally, you can load it like this:
 
-## Building
-### Managing dependencies
-DuckDB extensions uses VCPKG for dependency management. Enabling VCPKG is very simple: follow the [installation instructions](https://vcpkg.io/en/getting-started) or just run the following:
-```shell
-git clone https://github.com/Microsoft/vcpkg.git
-./vcpkg/bootstrap-vcpkg.sh
-export VCPKG_TOOLCHAIN_PATH=`pwd`/vcpkg/scripts/buildsystems/vcpkg.cmake
-```
-Note: VCPKG is only required for extensions that want to rely on it for dependency management. If you want to develop an extension without dependencies, or want to do your own dependency management, just skip this step. Note that the example extension uses VCPKG to build with a dependency for instructive purposes, so when skipping this step the build may not work without removing the dependency.
-
-### Build steps
-Now to build the extension, run:
-```sh
-make
-```
-The main binaries that will be built are:
-```sh
-./build/release/duckdb
-./build/release/test/unittest
-./build/release/extension/splink_udfs/splink_udfs.duckdb_extension
-```
-- `duckdb` is the binary for the duckdb shell with the extension code automatically loaded.
-- `unittest` is the test runner of duckdb. Again, the extension is already linked into the binary.
-- `splink_udfs.duckdb_extension` is the loadable binary as it would be distributed.
-
-## Running the extension
-To run the extension code, simply start the shell with `./build/release/duckdb`.
-
-Now we can use the features from the extension directly in DuckDB. The template contains a single scalar function `splink_udfs()` that takes a string arguments and returns a string:
-```
-D select splink_udfs('Jane') as result;
-┌───────────────┐
-│    result     │
-│    varchar    │
-├───────────────┤
-│ SplinkUdfs Jane 🐥 │
-└───────────────┘
+```sql
+.load '/path/to/splink_udfs.duckdb_extension';
 ```
 
-## Running the tests
-Different tests can be created for DuckDB extensions. The primary way of testing DuckDB extensions should be the SQL tests in `./test/sql`. These SQL tests can be run using:
-```sh
+If you're using the DuckDB CLI or embedded DuckDB in your project, simply run:
+
+```sql
+SELECT soundex('Robert'); -- returns 'R163'
+```
+
+## API
+
+### `soundex(VARCHAR) → VARCHAR`
+
+Computes the Soundex code of a string. Always returns a 4-character string (e.g., `S540`, `J200`, `0000` for empty input).
+
+### Example Usage
+
+```sql
+SELECT soundex('William'); -- returns 'W450'
+SELECT soundex('Joe');     -- returns 'J000'
+SELECT soundex('Charlie'); -- returns 'C640'
+```
+
+## Testing
+
+This extension uses [SQLLogicTests](https://duckdb.org/dev/sqllogictest/intro.html) for validation.
+
+To run the tests:
+
+```bash
 make test
 ```
 
-### Installing the deployed binaries
-To install your extension binaries from S3, you will need to do two things. Firstly, DuckDB should be launched with the
-`allow_unsigned_extensions` option set to true. How to set this will depend on the client you're using. Some examples:
+You’ll find the test cases in:
+`test/sql/soundex.test`
 
-CLI:
-```shell
-duckdb -unsigned
+## Build Instructions
+
+To build the extension:
+
+```bash
+GEN=ninja make
 ```
 
-Python:
-```python
-con = duckdb.connect(':memory:', config={'allow_unsigned_extensions' : 'true'})
+This produces:
+
+* `build/release/duckdb` — DuckDB shell with extension loaded
+* `build/release/extension/splink_udfs/splink_udfs.duckdb_extension` — loadable binary
+
+To run:
+
+```bash
+./build/release/duckdb
+.load 'build/release/extension/splink_udfs/splink_udfs.duckdb_extension'
 ```
 
-NodeJS:
-```js
-db = new duckdb.Database(':memory:', {"allow_unsigned_extensions": "true"});
-```
-
-Secondly, you will need to set the repository endpoint in DuckDB to the HTTP url of your bucket + version of the extension
-you want to install. To do this run the following SQL query in DuckDB:
-```sql
-SET custom_extension_repository='bucket.s3.eu-west-1.amazonaws.com/<your_extension_name>/latest';
-```
-Note that the `/latest` path will allow you to install the latest extension version available for your current version of
-DuckDB. To specify a specific version, you can pass the version instead.
-
-After running these steps, you can install and load your extension using the regular INSTALL/LOAD commands in DuckDB:
-```sql
-INSTALL splink_udfs
-LOAD splink_udfs
-```
