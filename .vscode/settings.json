@@ -1,0 +1,7 @@
+{
+    "search.exclude": {
+        "**/duckdb": true,
+        "**/extension-ci-tools": true,
+        "**/vcpkg": true
+    }
+}
