@@ -1,57 +1,51 @@
-#define DUCKDB_EXTENSION_MAIN
-
+#define DUCKDB_EXTENSION_MAIN // must precede DuckDB headers
 #include "splink_udfs_extension.hpp"
 #include "duckdb.hpp"
-#include "duckdb/common/exception.hpp"
-#include "duckdb/common/string_util.hpp"
 #include "duckdb/function/scalar_function.hpp"
 #include "duckdb/main/extension_util.hpp"
-#include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
 
-// OpenSSL linked through vcpkg
-#include <openssl/opensslv.h>
+#include "phonetic/soundex.hpp"
 
 namespace duckdb {
 
-inline void SplinkUdfsScalarFun(DataChunk &args, ExpressionState &state, Vector &result) {
-	auto &name_vector = args.data[0];
-	UnaryExecutor::Execute<string_t, string_t>(name_vector, result, args.size(), [&](string_t name) {
-		return StringVector::AddString(result, "SplinkUdfs " + name.GetString() + " 🐥");
-	});
+static string_t MakeStringResult(Vector &result, const char *cstr) {
+	return StringVector::AddString(result, cstr);
 }
 
-inline void SplinkUdfsOpenSSLVersionScalarFun(DataChunk &args, ExpressionState &state, Vector &result) {
-	auto &name_vector = args.data[0];
-	UnaryExecutor::Execute<string_t, string_t>(name_vector, result, args.size(), [&](string_t name) {
-		return StringVector::AddString(result, "SplinkUdfs " + name.GetString() + ", my linked OpenSSL version is " +
-		                                           OPENSSL_VERSION_TEXT);
+static void SoundexScalar(DataChunk &data_chunk, ExpressionState & /*state*/, Vector &result) {
+	// Use idx_t for row counts
+	const idx_t count = data_chunk.size();
+	auto &input = data_chunk.data[0];
+
+	// Reusable encoder instance per chunk
+	phonetic::Soundex encoder;
+
+	UnaryExecutor::Execute<string_t, string_t>(input, result, count, [&](const string_t &val) -> string_t {
+		// Handle empty string edge case explicitly
+		if (val.GetSize() == 0) {
+			// Return "0000" or the desired empty-string result
+			return StringVector::AddString(result, "0000");
+		}
+		const char *code = encoder.Encode(val.GetDataUnsafe());
+		return MakeStringResult(result, code);
 	});
 }
 
 static void LoadInternal(DatabaseInstance &instance) {
-	// Register a scalar function
-	auto splink_udfs_scalar_function = ScalarFunction("splink_udfs", {LogicalType::VARCHAR}, LogicalType::VARCHAR, SplinkUdfsScalarFun);
-	ExtensionUtil::RegisterFunction(instance, splink_udfs_scalar_function);
-
-	// Register another scalar function
-	auto splink_udfs_openssl_version_scalar_function = ScalarFunction("splink_udfs_openssl_version", {LogicalType::VARCHAR},
-	                                                            LogicalType::VARCHAR, SplinkUdfsOpenSSLVersionScalarFun);
-	ExtensionUtil::RegisterFunction(instance, splink_udfs_openssl_version_scalar_function);
+	ExtensionUtil::RegisterFunction(
+	    instance, ScalarFunction("soundex", {LogicalType::VARCHAR}, LogicalType::VARCHAR, SoundexScalar));
 }
 
 void SplinkUdfsExtension::Load(DuckDB &db) {
 	LoadInternal(*db.instance);
 }
+
 std::string SplinkUdfsExtension::Name() {
 	return "splink_udfs";
 }
 
 std::string SplinkUdfsExtension::Version() const {
-#ifdef EXT_VERSION_SPLINK_UDFS
-	return EXT_VERSION_SPLINK_UDFS;
-#else
-	return "";
-#endif
+	return duckdb::DuckDB::LibraryVersion();
 }
 
 } // namespace duckdb
@@ -59,15 +53,11 @@ std::string SplinkUdfsExtension::Version() const {
 extern "C" {
 
 DUCKDB_EXTENSION_API void splink_udfs_init(duckdb::DatabaseInstance &db) {
-	duckdb::DuckDB db_wrapper(db);
-	db_wrapper.LoadExtension<duckdb::SplinkUdfsExtension>();
+	duckdb::DuckDB(db).LoadExtension<duckdb::SplinkUdfsExtension>();
 }
 
 DUCKDB_EXTENSION_API const char *splink_udfs_version() {
 	return duckdb::DuckDB::LibraryVersion();
 }
-}
 
-#ifndef DUCKDB_EXTENSION_MAIN
-#error DUCKDB_EXTENSION_MAIN not defined
-#endif
+} // extern "C"
