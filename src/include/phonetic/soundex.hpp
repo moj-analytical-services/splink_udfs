@@ -1,3 +1,9 @@
+// -------------------------------------------------------------------------
+// We are grateful to Rob Tillaart's https://github.com/RobTillaart/Soundex
+// MIT-licensed Arduino Soundex library, which served as inspiration for
+// this C++ implementation.
+// -------------------------------------------------------------------------
+
 #pragma once
 
 #include <cctype>
@@ -41,7 +47,7 @@ inline void Soundex::SetLength(uint8_t length) {
 }
 
 inline uint8_t Soundex::ClassCode(char ch) {
-	// 3. Add bounds check for safety
+	// Add bounds check for safety
 	if (ch < 'A' || ch > 'Z') {
 		return 0;
 	}
