@@ -1,0 +1,23 @@
+# name: test/sql/splink_udfs.test
+# description: test splink_udfs extension
+# group: [sql]
+
+# Before we load the extension, this will fail
+statement error
+SELECT splink_udfs('Sam');
+----
+Catalog Error: Scalar Function with name splink_udfs does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require splink_udfs
+
+# Confirm the extension works
+query I
+SELECT splink_udfs('Sam');
+----
+SplinkUdfs Sam 🐥
+
+query I
+SELECT splink_udfs_openssl_version('Michael') ILIKE 'SplinkUdfs Michael, my linked OpenSSL version is OpenSSL%';
+----
+true
