@@ -1,0 +1,157 @@
+# name: test/sql/soundex.test
+# description: test soundex function
+# group: [sql]
+
+# Before we load the extension, this will fail
+statement error
+SELECT soundex('Sam');
+----
+Catalog Error: Scalar Function with name soundex does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require splink_udfs
+
+query I
+SELECT soundex('Robert');
+----
+R163
+
+query I
+SELECT soundex('John');
+----
+J500
+
+query I
+SELECT soundex('Will');
+----
+W400
+
+query I
+SELECT soundex('William');
+----
+W450
+
+query I
+SELECT soundex('James');
+----
+J520
+
+query I
+SELECT soundex('Charles');
+----
+C642
+
+query I
+SELECT soundex('George');
+----
+G620
+
+query I
+SELECT soundex('Joseph');
+----
+J210
+
+query I
+SELECT soundex('Richard');
+----
+R263
+
+query I
+SELECT soundex('Thomas');
+----
+T520
+
+query I
+SELECT soundex('Edward');
+----
+E363
+
+query I
+SELECT soundex('Henry');
+----
+H560
+
+query I
+SELECT soundex('Walter');
+----
+W436
+
+query I
+SELECT soundex('Arthur');
+----
+A636
+
+query I
+SELECT soundex('Fred');
+----
+F630
+
+query I
+SELECT soundex('Albert');
+----
+A416
+
+query I
+SELECT soundex('Samuel');
+----
+S540
+
+query I
+SELECT soundex('David');
+----
+D130
+
+query I
+SELECT soundex('Louis');
+----
+L200
+
+query I
+SELECT soundex('Joe');
+----
+J000
+
+query I
+SELECT soundex('Charlie');
+----
+C640
+
+query I
+SELECT soundex('Clarence');
+----
+C465
+
+query I
+SELECT soundex('Andrew');
+----
+A536
+
+query I
+SELECT soundex('Daniel');
+----
+D540
+
+query I
+SELECT soundex('Ernest');
+----
+E652
+
+query I
+SELECT soundex('Jesse');
+----
+J200
+
+query I
+SELECT soundex('Oscar');
+----
+O260
+
+query I
+SELECT soundex('Lewis');
+----
+L200
+
+query I
+SELECT soundex('Peter');
+----
+P360
