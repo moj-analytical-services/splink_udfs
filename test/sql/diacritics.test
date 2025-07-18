@@ -1,9 +1,59 @@
-# name: strip­_diacritics
+# name: strip_diacritics
+# description: test strip_diacritics function
+# group: [sql]
+
 require splink_udfs
 
+# Basic German and French test
 query I
 SELECT strip_diacritics('Jürgen Thérèse');
 ----
 Jurgen Therese
 
+# Test a wider range of common diacritics
+query I
+SELECT strip_diacritics('àáâãäåçèéêëìíîïñòóôõöùúûüýÿ');
+----
+aaaaaaceeeeiiiinooooouuuuyy
 
+# Test uppercase diacritics
+query I
+SELECT strip_diacritics('ÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝŸ');
+----
+AAAAAACEEEEIIIINOOOOOUUUUYY
+
+# --- Test characters that are NOT diacritics ---
+# These should NOT be transliterated by strip_diacritics,
+# distinguishing it from the 'unaccent' function.
+
+# Test ligatures (Æ, Œ) and distinct letters (ø, ß)
+query I
+SELECT strip_diacritics('Ærøskøbing, Groß, Œuvre');
+----
+Ærøskøbing, Groß, Œuvre
+
+# Test other non-diacritic special letters
+query I
+SELECT strip_diacritics('Łódź, Reykjavík');
+----
+Łodz, Reykjavik
+
+# --- Edge Cases ---
+
+# Test empty string
+query I
+SELECT strip_diacritics('');
+----
+(empty)
+
+# Test a string with no diacritics
+query I
+SELECT strip_diacritics('Hello world 123!@#');
+----
+Hello world 123!@#
+
+# Test a mixed string with diacritics, special characters, and numbers
+query I
+SELECT strip_diacritics('François-Marie d''Arrouët, dit VOLTAIRE (né le 21/11/1694)');
+----
+Francois-Marie d'Arrouet, dit VOLTAIRE (ne le 21/11/1694)

@@ -1,0 +1,50 @@
+# name: unaccent
+# description: test unaccent function
+# group: [sql]
+
+require splink_udfs
+
+# Test that it performs the same as strip_diacritics for simple cases
+query I
+SELECT unaccent('Jürgen Thérèse');
+----
+Jurgen Therese
+
+# Test the specific transliteration rules
+query I
+SELECT unaccent('Ærøskøbing');
+----
+AEroskobing
+
+query I
+SELECT unaccent('Großes Straßenschild');
+----
+Grosses Strassenschild
+
+query I
+SELECT unaccent('Œil, œuvre');
+----
+OEil, oeuvre
+
+query I
+SELECT unaccent('Þór, Björn, Łódź');
+----
+Thor, Bjorn, Lodz
+
+# Test a complex string with both diacritics and special characters
+query I
+SELECT unaccent('Ærøskøbing éëôÉ Łódź ß');
+----
+AEroskobing eeoE Lodz ss
+
+# Test empty string
+query I
+SELECT unaccent('');
+----
+(empty)
+
+# Test string with no changes needed
+query I
+SELECT unaccent('Hello World 123');
+----
+Hello World 123

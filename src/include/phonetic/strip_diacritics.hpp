@@ -2,10 +2,12 @@
 
 #include <memory>
 #include <string>
+#include <vector>
+#include <utility>
 #include <utf8proc.h>
 #include "duckdb/common/exception.hpp"
 
-namespace phonetic { // keep alongside your Soundex class
+namespace phonetic {
 
 struct Utf8procDeleter {
 	void operator()(utf8proc_uint8_t *p) const {
@@ -32,6 +34,39 @@ inline std::string StripDiacritics(const std::string &utf8) {
 	}
 	Utf8Buf holder(out_raw); // RAII: free() when going out of scope
 	return std::string(reinterpret_cast<char *>(holder.get()));
+}
+
+inline std::string Unaccent(const std::string &utf8) {
+
+	std::string result = StripDiacritics(utf8);
+
+	static const std::vector<std::pair<std::string, std::string>> REPLACEMENTS = {// Latin Extended-A
+	                                                                              {"Ø", "O"},
+	                                                                              {"ø", "o"},
+	                                                                              {"Þ", "Th"},
+	                                                                              {"þ", "th"},
+	                                                                              {"Ð", "D"},
+	                                                                              {"ð", "d"},
+	                                                                              {"ß", "ss"},
+	                                                                              {"Æ", "AE"},
+	                                                                              {"æ", "ae"},
+	                                                                              {"Œ", "OE"},
+	                                                                              {"œ", "oe"},
+	                                                                              // Other common ones
+	                                                                              {"Ł", "L"},
+	                                                                              {"ł", "l"},
+	                                                                              {"Đ", "D"},
+	                                                                              {"đ", "d"}};
+
+	for (const auto &rule : REPLACEMENTS) {
+		std::string::size_type pos = 0;
+		while ((pos = result.find(rule.first, pos)) != std::string::npos) {
+			result.replace(pos, rule.first.length(), rule.second);
+			pos += rule.second.length();
+		}
+	}
+
+	return result;
 }
 
 } // namespace phonetic
