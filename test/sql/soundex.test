@@ -155,3 +155,8 @@ query I
 SELECT soundex('Peter');
 ----
 P360
+
+query I
+SELECT soundex('Émilie');
+----
+M400
