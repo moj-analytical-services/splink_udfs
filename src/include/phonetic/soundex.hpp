@@ -61,24 +61,41 @@ inline const char *Soundex::Encode(const char *str) {
 	duckdb::FastMemset(buffer_, '0', length_);
 	buffer_[length_] = '\0';
 
-	// Skip non‑letters
-	while (*str && !std::isalpha(static_cast<unsigned char>(*str))) {
-		++str;
+	// Safely find the first ASCII letter, skipping all other bytes.
+	const char *first_letter_ptr = nullptr;
+	while (*str) {
+		unsigned char current_byte = static_cast<unsigned char>(*str);
+		// Only process ASCII characters. This makes the function UTF-8 safe.
+		// This is consistent with the postgres implementation
+		if (current_byte <= 127 && std::isalpha(current_byte)) {
+			first_letter_ptr = str;
+			break;
+		}
+		str++;
 	}
-	if (*str == '\0') {
+
+	// If no ASCII letters were found in the string, return the default code.
+	if (!first_letter_ptr) {
 		return buffer_;
 	}
 
-	buffer_[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(*str)));
+	// Store the first letter and its code.
+	buffer_[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(*first_letter_ptr)));
 	uint8_t last = ClassCode(buffer_[0]);
-	++str;
+
+	// Start processing from the character AFTER the first letter found.
+	str = first_letter_ptr + 1;
 
 	uint8_t out_idx = 1;
 	for (; *str && out_idx < length_; ++str) {
-		if (!std::isalpha(static_cast<unsigned char>(*str))) {
+		unsigned char current_byte = static_cast<unsigned char>(*str);
+
+		// MODIFICATION: Explicitly ignore non-ASCII bytes and non-letters.
+		if (current_byte > 127 || !std::isalpha(current_byte)) {
 			continue;
 		}
-		uint8_t code = ClassCode(static_cast<char>(std::toupper(static_cast<unsigned char>(*str))));
+
+		uint8_t code = ClassCode(static_cast<char>(std::toupper(current_byte)));
 		if (code != 0 && code != last) {
 			buffer_[out_idx++] = static_cast<char>('0' + code);
 		}

@@ -47,3 +47,13 @@ def compare_soundex(input_str):
 
 # Test cases
 compare_soundex("Robert")
+
+sql = """
+select strip_diacritics('Café') as stripped
+"""
+con.sql(sql).show(max_width=10000)
+
+sql = """
+select strip_diacritics('ßærøskøbing éëôÉ') as stripped
+"""
+con.sql(sql).show(max_width=10000)
