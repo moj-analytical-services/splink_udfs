@@ -1,0 +1,9 @@
+# name: strip­_diacritics
+require splink_udfs
+
+query I
+SELECT strip_diacritics('Jürgen Thérèse');
+----
+Jurgen Therese
+
+

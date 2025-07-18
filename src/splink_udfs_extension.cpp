@@ -5,6 +5,7 @@
 #include "duckdb/main/extension_util.hpp"
 
 #include "phonetic/soundex.hpp"
+#include "phonetic/strip_diacritics.hpp"
 
 namespace duckdb {
 
@@ -31,9 +32,28 @@ static void SoundexScalar(DataChunk &data_chunk, ExpressionState & /*state*/, Ve
 	});
 }
 
+static void StripDiacriticsScalar(DataChunk &data_chunk, ExpressionState & /*state*/, Vector &result) {
+	const idx_t count = data_chunk.size();
+	auto &input = data_chunk.data[0];
+
+	UnaryExecutor::Execute<string_t, string_t>(input, result, count, [&](const string_t &val) -> string_t {
+		if (val.GetSize() == 0) {
+			return StringVector::AddString(result, "");
+		}
+		// utf8 bytes → std::string
+		std::string in(val.GetDataUnsafe(), val.GetSize());
+
+		std::string folded = phonetic::StripDiacritics(in);
+		return StringVector::AddString(result, folded);
+	});
+}
+
 static void LoadInternal(DatabaseInstance &instance) {
 	ExtensionUtil::RegisterFunction(
 	    instance, ScalarFunction("soundex", {LogicalType::VARCHAR}, LogicalType::VARCHAR, SoundexScalar));
+
+	ExtensionUtil::RegisterFunction(instance, ScalarFunction("strip_diacritics", {LogicalType::VARCHAR},
+	                                                         LogicalType::VARCHAR, StripDiacriticsScalar));
 }
 
 void SplinkUdfsExtension::Load(DuckDB &db) {
