@@ -25,6 +25,10 @@ SELECT soundex('Robert'); -- returns 'R163'
 
 Computes the Soundex code of a string. Always returns a 4-character string (e.g., `S540`, `J200`, `0000` for empty input).
 
+Note that soundex ignores non-ascii chacters.  This means, for example, that `soundex('Émilie')` returns M400, which is the same as `soundex('milie')`.
+
+If you have diacritics or other special characters, you should wrap you call like `soundex(strip_diacritics(first_name))`
+
 ### `strip_diacritics(VARCHAR) → VARCHAR`
 
 Removes diacritical marks from a string using Unicode normalization. For example, `Jürgen` becomes `Jurgen`. This function does not transliterate distinct letters like `ø` or `ß`.
