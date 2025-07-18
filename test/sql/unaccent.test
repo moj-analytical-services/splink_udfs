@@ -1,4 +1,4 @@
-# name: unaccent
+# name: test/sql/unaccent.test
 # description: test unaccent function
 # group: [sql]
 
@@ -45,6 +45,6 @@ SELECT unaccent('');
 
 # Test string with no changes needed
 query I
-SELECT unaccent('Hello World 123');
+SELECT unaccent('Hello World 123😊');
 ----
-Hello World 123
+Hello World 123😊
