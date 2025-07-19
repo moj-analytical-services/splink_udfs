@@ -12,6 +12,12 @@ namespace duckdb {
 
 using duckdb::ext_phonetic::DoubleMetaphone; // convenience alias
 
+// Define static constexpr members from DoubleMetaphone class
+constexpr std::array<const char *, 5> DoubleMetaphone::SILENT_START;
+constexpr std::array<const char *, 10> DoubleMetaphone::L_R_N_M_B_H_F_V_W_SPACE;
+constexpr std::array<const char *, 11> DoubleMetaphone::ES_EP_EB_EL_EY_IB_IL_IN_IE_EI_ER;
+constexpr std::array<const char *, 8> DoubleMetaphone::L_T_K_S_N_M_B_Z;
+
 static string_t MakeStringResult(Vector &result, const char *cstr) {
 	return StringVector::AddString(result, cstr);
 }
