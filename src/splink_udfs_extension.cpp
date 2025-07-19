@@ -77,39 +77,68 @@ static void UnaccentScalar(DataChunk &data_chunk, ExpressionState & /*state*/, V
 // -----------------------------------------------------------------------------
 // Double Metaphone
 // -----------------------------------------------------------------------------
-static void DoubleMetaphoneScalar(DataChunk &data_chunk, ExpressionState & /*state*/, Vector &result) {
+static void DoubleMetaphoneScalarList(DataChunk &data_chunk, ExpressionState & /*state*/, Vector &result) {
 	const idx_t count = data_chunk.size();
 	auto &input = data_chunk.data[0];
 
-	// Optional second argument: TRUE = alternate code, FALSE/NULL = primary
-	bool has_alt_arg = data_chunk.ColumnCount() == 2;
-	Vector *alt_vec = has_alt_arg ? &data_chunk.data[1] : nullptr;
+	result.SetVectorType(VectorType::FLAT_VECTOR);
+	// Create/obtain the child vector that will store individual strings
+	auto &child = ListVector::GetEntry(result);
+	ListVector::Reserve(result, count * 2); // heuristic upper bound (primary+alt per row)
 
-	// Re-use one encoder per chunk
+	// Track where we are writing inside the child vector
+	idx_t child_offset = 0;
+
 	DoubleMetaphone encoder;
+	string_t *child_strings = FlatVector::GetData<string_t>(child);
+	auto *list_entries = FlatVector::GetData<list_entry_t>(result);
 
-	if (has_alt_arg) {
-		// Binary executor for handling both arguments
-		BinaryExecutor::Execute<string_t, bool, string_t>(
-		    input, *alt_vec, result, count, [&](const string_t &val, bool use_alternate) -> string_t {
-			    if (val.GetSize() == 0) {
-				    return StringVector::AddString(result, "");
-			    }
-			    std::string_view sv(val.GetDataUnsafe(), val.GetSize());
-			    std::string code = encoder.DoubleMetaphoneEncode(std::string(sv), use_alternate);
-			    return StringVector::AddString(result, code);
-		    });
-	} else {
-		// Unary executor for single argument (primary code only)
-		UnaryExecutor::Execute<string_t, string_t>(input, result, count, [&](const string_t &val) -> string_t {
-			if (val.GetSize() == 0) {
-				return StringVector::AddString(result, "");
-			}
-			std::string_view sv(val.GetDataUnsafe(), val.GetSize());
-			std::string code = encoder.DoubleMetaphoneEncode(std::string(sv), false); // primary code
-			return StringVector::AddString(result, code);
-		});
+	UnifiedVectorFormat input_format;
+	input.ToUnifiedFormat(count, input_format);
+
+	for (idx_t row = 0; row < count; ++row) {
+		auto input_idx = input_format.sel->get_index(row);
+
+		if (!input_format.validity.RowIsValid(input_idx)) {
+			FlatVector::SetNull(result, row, true);
+			continue;
+		}
+
+		// Read input
+		string_t in = ((string_t *)input_format.data)[input_idx];
+		if (in.GetSize() == 0) {
+			// Empty string case - return empty list
+			list_entry_t &entry = list_entries[row];
+			entry.offset = child_offset;
+			entry.length = 0;
+			continue;
+		}
+
+		std::string_view sv(in.GetDataUnsafe(), in.GetSize());
+
+		// ---- generate codes -------------------------------------------------
+		std::string primary = encoder.DoubleMetaphoneEncode(std::string(sv), false);
+		std::string alternate = encoder.DoubleMetaphoneEncode(std::string(sv), true);
+
+		// ---- write into child vector ----------------------------------------
+		list_entry_t &entry = list_entries[row];
+		entry.offset = child_offset;
+
+		// 1. primary (always present if not empty)
+		if (!primary.empty()) {
+			child_strings[child_offset++] = StringVector::AddString(child, primary);
+		}
+
+		// 2. alternate (only if non-empty and different)
+		if (!alternate.empty() && alternate != primary) {
+			child_strings[child_offset++] = StringVector::AddString(child, alternate);
+		}
+
+		entry.length = child_offset - entry.offset; // number of elements in *this* list
 	}
+
+	// Tell DuckDB how many rows we really appended to the child
+	ListVector::SetListSize(result, child_offset);
 }
 
 static void LoadInternal(DatabaseInstance &instance) {
@@ -122,12 +151,10 @@ static void LoadInternal(DatabaseInstance &instance) {
 	ExtensionUtil::RegisterFunction(
 	    instance, ScalarFunction("unaccent", {LogicalType::VARCHAR}, LogicalType::VARCHAR, UnaccentScalar));
 
-	// Register double_metaphone with optional second argument for alternate code
-	ExtensionUtil::RegisterFunction(instance, ScalarFunction("double_metaphone", {LogicalType::VARCHAR},
-	                                                         LogicalType::VARCHAR, DoubleMetaphoneScalar));
+	// Register double_metaphone with new list return type
 	ExtensionUtil::RegisterFunction(instance,
-	                                ScalarFunction("double_metaphone", {LogicalType::VARCHAR, LogicalType::BOOLEAN},
-	                                               LogicalType::VARCHAR, DoubleMetaphoneScalar));
+	                                ScalarFunction("double_metaphone", {LogicalType::VARCHAR},
+	                                               LogicalType::LIST(LogicalType::VARCHAR), DoubleMetaphoneScalarList));
 }
 
 void SplinkUdfsExtension::Load(DuckDB &db) {
