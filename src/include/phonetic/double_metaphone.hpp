@@ -260,15 +260,12 @@ private:
 	}
 
 	// NEW – handles brace-initialiser lists like {"CK","CG","CQ"}
-	static bool Contains(const std::string &value,
-	                     int32_t start,
-	                     int32_t length,
+	static bool Contains(const std::string &value, int32_t start, int32_t length,
 	                     std::initializer_list<const char *> criteria) {
 		if (start < 0 || start + length > static_cast<int32_t>(value.size())) {
 			return false;
 		}
-		std::string_view target(value.data() + start,
-		                        static_cast<size_t>(length));
+		std::string_view target(value.data() + start, static_cast<size_t>(length));
 		for (auto pat : criteria) {
 			if (target == pat) {
 				return true;
@@ -286,7 +283,7 @@ private:
 	                     const std::array<const char *, N> &criteria) {
 		return Contains(value, start, length, criteria.data(), N);
 	}
-	static bool Contains(const std::string &value, int32_t start, int32_t length, const char* const* criteria,
+	static bool Contains(const std::string &value, int32_t start, int32_t length, const char *const *criteria,
 	                     size_t criterion_count) {
 		if (start < 0 || start + length > static_cast<int32_t>(value.size())) {
 			return false;
