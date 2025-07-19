@@ -6,8 +6,11 @@
 
 #include "phonetic/soundex.hpp"
 #include "phonetic/strip_diacritics.hpp"
+#include "phonetic/double_metaphone.hpp"
 
 namespace duckdb {
+
+using duckdb::ext_phonetic::DoubleMetaphone; // convenience alias
 
 static string_t MakeStringResult(Vector &result, const char *cstr) {
 	return StringVector::AddString(result, cstr);
@@ -65,6 +68,44 @@ static void UnaccentScalar(DataChunk &data_chunk, ExpressionState & /*state*/, V
 	});
 }
 
+// -----------------------------------------------------------------------------
+// Double Metaphone
+// -----------------------------------------------------------------------------
+static void DoubleMetaphoneScalar(DataChunk &data_chunk, ExpressionState & /*state*/, Vector &result) {
+	const idx_t count = data_chunk.size();
+	auto &input = data_chunk.data[0];
+
+	// Optional second argument: TRUE = alternate code, FALSE/NULL = primary
+	bool has_alt_arg = data_chunk.ColumnCount() == 2;
+	Vector *alt_vec = has_alt_arg ? &data_chunk.data[1] : nullptr;
+
+	// Re-use one encoder per chunk
+	DoubleMetaphone encoder;
+
+	if (has_alt_arg) {
+		// Binary executor for handling both arguments
+		BinaryExecutor::Execute<string_t, bool, string_t>(
+		    input, *alt_vec, result, count, [&](const string_t &val, bool use_alternate) -> string_t {
+			    if (val.GetSize() == 0) {
+				    return StringVector::AddString(result, "");
+			    }
+			    std::string_view sv(val.GetDataUnsafe(), val.GetSize());
+			    std::string code = encoder.DoubleMetaphoneEncode(std::string(sv), use_alternate);
+			    return StringVector::AddString(result, code);
+		    });
+	} else {
+		// Unary executor for single argument (primary code only)
+		UnaryExecutor::Execute<string_t, string_t>(input, result, count, [&](const string_t &val) -> string_t {
+			if (val.GetSize() == 0) {
+				return StringVector::AddString(result, "");
+			}
+			std::string_view sv(val.GetDataUnsafe(), val.GetSize());
+			std::string code = encoder.DoubleMetaphoneEncode(std::string(sv), false); // primary code
+			return StringVector::AddString(result, code);
+		});
+	}
+}
+
 static void LoadInternal(DatabaseInstance &instance) {
 	ExtensionUtil::RegisterFunction(
 	    instance, ScalarFunction("soundex", {LogicalType::VARCHAR}, LogicalType::VARCHAR, SoundexScalar));
@@ -74,6 +115,13 @@ static void LoadInternal(DatabaseInstance &instance) {
 
 	ExtensionUtil::RegisterFunction(
 	    instance, ScalarFunction("unaccent", {LogicalType::VARCHAR}, LogicalType::VARCHAR, UnaccentScalar));
+
+	// Register double_metaphone with optional second argument for alternate code
+	ExtensionUtil::RegisterFunction(instance, ScalarFunction("double_metaphone", {LogicalType::VARCHAR},
+	                                                         LogicalType::VARCHAR, DoubleMetaphoneScalar));
+	ExtensionUtil::RegisterFunction(instance,
+	                                ScalarFunction("double_metaphone", {LogicalType::VARCHAR, LogicalType::BOOLEAN},
+	                                               LogicalType::VARCHAR, DoubleMetaphoneScalar));
 }
 
 void SplinkUdfsExtension::Load(DuckDB &db) {
