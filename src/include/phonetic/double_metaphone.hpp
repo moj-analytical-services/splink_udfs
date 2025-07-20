@@ -223,8 +223,14 @@ public:
 		max_code_len_ = len;
 	}
 
+	// Get the library's default max code length
+	static constexpr int32_t DefaultMaxCodeLen() {
+		return kDefaultMaxCodeLen;
+	}
+
 private:
 	// --- Constants -------------------------------------------------------------
+	static constexpr int32_t kDefaultMaxCodeLen = 6;
 	static constexpr const char *VOWELS = "AEIOUY";
 	static constexpr std::array<const char *, 5> SILENT_START = {"GN", "KN", "PN", "WR", "PS"};
 	static constexpr std::array<const char *, 10> L_R_N_M_B_H_F_V_W_SPACE = {"L", "R", "N", "M", "B",
@@ -234,7 +240,7 @@ private:
 	static constexpr std::array<const char *, 8> L_T_K_S_N_M_B_Z = {"L", "T", "K", "S", "N", "M", "B", "Z"};
 
 	// --- Member data -----------------------------------------------------------
-	int32_t max_code_len_ = 4;
+	int32_t max_code_len_ = kDefaultMaxCodeLen;
 
 	// --- Small helpers ---------------------------------------------------------
 	static std::string CleanInput(const std::string &input) {
