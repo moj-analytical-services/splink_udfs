@@ -262,6 +262,9 @@ private:
 	}
 
 	static bool IsVowel(char ch) {
+		if (ch == '\0') { // <-- NEW: guard the NUL
+			return false;
+		}
 		return std::strchr(VOWELS, ch) != nullptr;
 	}
 
