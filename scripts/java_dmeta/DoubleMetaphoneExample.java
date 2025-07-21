@@ -59,7 +59,7 @@ public class DoubleMetaphoneExample {
                 // Write to .test file
                 testWriter.write("query I");
                 testWriter.newLine();
-                testWriter.write(String.format("SELECT double_metaphone('%s');%n", name));
+                testWriter.write(String.format("SELECT double_metaphone('%s');%n", name.replace("'", "''")));
                 testWriter.write("----");
                 testWriter.newLine();
                 testWriter.write(arrayOutput);
@@ -74,5 +74,17 @@ public class DoubleMetaphoneExample {
 
         System.out.println("Done! Wrote " + names.size() + " entries to " + testPath.toAbsolutePath());
         System.out.println("CSV written to " + csvPath.toAbsolutePath());
+
+        String input = "Hemptah"; // hard-coded input
+
+        DoubleMetaphone dm2 = new DoubleMetaphone();
+        dm2.setMaxCodeLen(6); // optional, 4 is default
+
+        String primary = dm2.doubleMetaphone(input);
+        String alternate = dm2.doubleMetaphone(input, true);
+
+        System.out.println("Input: " + input);
+        System.out.println("Primary: " + primary);
+        System.out.println("Alternate: " + alternate);
     }
 }

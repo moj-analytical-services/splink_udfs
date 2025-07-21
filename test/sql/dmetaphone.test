@@ -621,7 +621,7 @@ SELECT double_metaphone('Annelise');
 [ANLS]
 
 query I
-SELECT double_metaphone('"Catherine,"');
+SELECT double_metaphone('Catherine');
 ----
 [K0RN, KTRN]
 
@@ -656,9 +656,9 @@ SELECT double_metaphone('Erkki');
 [ARK]
 
 query I
-SELECT double_metaphone('"Eleanor,"');
+SELECT double_metaphone('Eleanor');
 ----
-[LNR]
+[ALNR]
 
 query I
 SELECT double_metaphone('Célia');
@@ -791,9 +791,9 @@ SELECT double_metaphone('Kesha');
 [KX]
 
 query I
-SELECT double_metaphone('"Alois-Konstantin,"');
+SELECT double_metaphone('Alois-Konstantin');
 ----
-[LSKNST]
+[ALSKNS]
 
 query I
 SELECT double_metaphone('Deborah');
@@ -1041,7 +1041,7 @@ SELECT double_metaphone('Lov');
 [LF]
 
 query I
-SELECT double_metaphone('"Philipp-Ernst,"');
+SELECT double_metaphone('Philipp-Ernst');
 ----
 [FLPRNS]
 
@@ -1101,9 +1101,9 @@ SELECT double_metaphone('Neheb');
 [NHP]
 
 query I
-SELECT double_metaphone('"Joan,"');
+SELECT double_metaphone('Joan');
 ----
-[JN]
+[JN, AN]
 
 query I
 SELECT double_metaphone('Fiona');
@@ -1946,9 +1946,9 @@ SELECT double_metaphone('Petermann');
 [PTRMN]
 
 query I
-SELECT double_metaphone('"Ernest,"');
+SELECT double_metaphone('Ernest');
 ----
-[RNST]
+[ARNST]
 
 query I
 SELECT double_metaphone('Kolbeinn');
@@ -2621,7 +2621,7 @@ SELECT double_metaphone('Zeyyat');
 [ST]
 
 query I
-SELECT double_metaphone('Ze'ev');
+SELECT double_metaphone('Ze''ev');
 ----
 [SF]
 
@@ -3291,7 +3291,7 @@ SELECT double_metaphone('Rola');
 [RL]
 
 query I
-SELECT double_metaphone('Baháʼu'lláh');
+SELECT double_metaphone('Baháʼu''lláh');
 ----
 [PL]
 
@@ -3546,9 +3546,9 @@ SELECT double_metaphone('Krishan');
 [KRXN]
 
 query I
-SELECT double_metaphone('"Anthony,"');
+SELECT double_metaphone('Anthony');
 ----
-[N0N, NTN]
+[AN0N, ANTN]
 
 query I
 SELECT double_metaphone('Jarle');
@@ -3976,9 +3976,9 @@ SELECT double_metaphone('Margaritis');
 [MRKRTS]
 
 query I
-SELECT double_metaphone('"Ada,"');
+SELECT double_metaphone('Ada');
 ----
-[T]
+[AT]
 
 query I
 SELECT double_metaphone('Sönke');
@@ -4811,9 +4811,9 @@ SELECT double_metaphone('Siddharth');
 [STR0, STRT]
 
 query I
-SELECT double_metaphone('"Arnulf,"');
+SELECT double_metaphone('Arnulf');
 ----
-[RNLF]
+[ARNLF]
 
 query I
 SELECT double_metaphone('Charles-Marie-Esprit');
