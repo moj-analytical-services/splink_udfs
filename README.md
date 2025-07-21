@@ -1,6 +1,7 @@
 # Splink UDFs Extension for DuckDB
 
-The `splink_udfs` extension is work in progress. It aims to offer a variety of functions that are useful for the purpose of data linkage, including support for the [Soundex](https://en.wikipedia.org/wiki/Soundex) algorithm, diacritic stripping, and text transliteration. This allows similarity matching of names and other words based on how they sound, rather than how they are spelled.
+The `splink_udfs` extension is work in progress. It aims to offer a variety of function**Exception:**
+The Double Metaphone implementation in `src/include/phonetic/double_metaphone.hpp` is a literal C++ translation of `org.apache.commons.codec.language.DoubleMetaphone` and is therefore licensed separately under the [Apache License 2.0](LICENSE_APACHE). See the top of the header file for the full Apache license notice, and the project's `NOTICE` file for attribution details.that are useful for the purpose of data linkage, including support for the [Soundex](https://en.wikipedia.org/wiki/Soundex) algorithm, [Double Metaphone](https://en.wikipedia.org/wiki/Metaphone#Double_Metaphone) phonetic encoding, diacritic stripping, and text transliteration. This allows similarity matching of names and other words based on how they sound, rather than how they are spelled.
 
 This repo is based on the [DuckDB Extension Template](https://github.com/duckdb/extension-template)
 ## Installation
@@ -37,6 +38,16 @@ Removes diacritical marks from a string using Unicode normalization. For example
 
 Provides a more comprehensive transliteration of a string. It first strips all diacritics and then converts other special characters and ligatures (e.g., `Æ` → `AE`, `ø` → `o`, `ß` → `ss`) to their basic Latin equivalents.
 
+### `double_metaphone(VARCHAR) → LIST(VARCHAR)`
+
+Computes the Double Metaphone phonetic codes for a string. Double Metaphone is an advanced phonetic algorithm that generates up to two alternative pronunciations for English words, making it more accurate than Soundex for matching names that may have different pronunciations.
+
+The function returns a list containing:
+- The primary phonetic code (always present if input is non-empty)
+- The alternate phonetic code (only included if different from the primary)
+
+This allows for more flexible matching - you can check if any code from one word matches any code from another word.
+
 ### Example Usage
 
 ```sql
@@ -54,6 +65,12 @@ SELECT
     strip_diacritics('Ærø') AS stripped,
     unaccent('Ærø') AS unaccented;
 -- returns 'Ærø', 'AEro'
+
+-- Double Metaphone examples
+SELECT double_metaphone('Smith'); -- returns ['SM0']
+SELECT double_metaphone('Schmidt'); -- returns ['XMT', 'SMT']
+SELECT double_metaphone('Johnson'); -- returns ['JNSN']
+SELECT double_metaphone('Jackson'); -- returns ['JKSN']
 ```
 
 ## Testing
@@ -87,3 +104,10 @@ To run:
 ./build/release/duckdb
 .load 'build/release/extension/splink_udfs/splink_udfs.duckdb_extension'
 ```
+
+## License
+
+**splink_udfs** is primarily licensed under the [MIT License](LICENSE).
+
+**Exception:**
+The Double Metaphone implementation in `src/phonetics/double_metaphone.cpp` (and its accompanying header) is a literal C++ translation of `org.apache.commons.codec.language.DoubleMetaphone` see [here](https://javadoc.io/doc/commons-codec/commons-codec/1.6/org/apache/commons/codec/language/DoubleMetaphone.html) and is therefore licensed separately under the [Apache License 2.0](LICENSE-APACHE). See the top of `double_metaphone.cpp` for the full Apache header, and the project’s `NOTICE` file for attribution details.

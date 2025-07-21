@@ -1,15 +1,25 @@
 // double_metaphone.hpp
-// -----------------------------------------------------------------------------
-// A C++11 port of Apache Commons Codec's DoubleMetaphone (original Java source
-// licensed under the Apache License 2.0).
 //
-// Style and layout comply with DuckDB community‑extension guidelines:
-//   * #pragma once
-//   * CamelCase for classes / functions, snake_case for variables
-//   * 120‑column limit, brace‑every‑block, clang‑format friendly
-//   * No raw new/delete, no global state, no RTTI hacks
-//   * Namespace duckdb::ext_phonetic (single nesting)
-// -----------------------------------------------------------------------------
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+// Modifications:
+//   - C++11 port of org.apache.commons.codec.language.DoubleMetaphone
+
 #pragma once
 
 #include <array>
