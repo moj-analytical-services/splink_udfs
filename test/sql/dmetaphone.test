@@ -1,4 +1,9 @@
+# name: test/sql/dmetaphone.test
+# description: test dmetaphone function
+# group: [sql]
+
 require splink_udfs
+
 
 query I
 SELECT double_metaphone('Arnold');
@@ -383,7 +388,7 @@ SELECT double_metaphone('Sebastián');
 query I
 SELECT double_metaphone('Andrzej');
 ----
-[ANTRSJ, ANTRS ]
+[ANTRSJ, 'ANTRS ']
 
 query I
 SELECT double_metaphone('Camilla');
@@ -531,7 +536,7 @@ SELECT double_metaphone('Dagoberto');
 [TKPRT]
 
 query I
-SELECT double_metaphone('L'Imam');
+SELECT double_metaphone('L''Imam');
 ----
 [LMM]
 
@@ -756,7 +761,7 @@ SELECT double_metaphone('Edmar');
 [ATMR]
 
 query I
-SELECT double_metaphone('Maw'dud');
+SELECT double_metaphone('Maw''dud');
 ----
 [MTT]
 
@@ -1493,7 +1498,7 @@ SELECT double_metaphone('Philo');
 query I
 SELECT double_metaphone('Bořivoj');
 ----
-[PFJ, PF ]
+[PFJ, 'PF ']
 
 query I
 SELECT double_metaphone('Khamtai');
@@ -2193,7 +2198,7 @@ SELECT double_metaphone('Theodoros');
 query I
 SELECT double_metaphone('Mordechaj');
 ----
-[MRTXJ, MRTK ]
+[MRTXJ, 'MRTK ']
 
 query I
 SELECT double_metaphone('Sophus');
@@ -4003,7 +4008,7 @@ SELECT double_metaphone('Jesualdo');
 query I
 SELECT double_metaphone('Jędrzej');
 ----
-[JTRSJ, ATRS ]
+[JTRSJ, 'ATRS ']
 
 query I
 SELECT double_metaphone('Shafik');
@@ -4118,7 +4123,7 @@ SELECT double_metaphone('Fanizani');
 query I
 SELECT double_metaphone('Antonij');
 ----
-[ANTNJ, ANTN ]
+[ANTNJ, 'ANTN ']
 
 query I
 SELECT double_metaphone('Ruqayyah');
@@ -4938,7 +4943,7 @@ SELECT double_metaphone('Tadd');
 query I
 SELECT double_metaphone('Błażej');
 ----
-[PJ, P ]
+[PJ, 'P ']
 
 query I
 SELECT double_metaphone('Salou');
