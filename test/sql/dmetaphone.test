@@ -1,0 +1,5007 @@
+# name: test/sql/dmetaphone.test
+# description: test dmetaphone function
+# group: [sql]
+
+require splink_udfs
+
+
+query I
+SELECT double_metaphone('Arnold');
+----
+[ARNLT]
+
+query I
+SELECT double_metaphone('Itamar');
+----
+[ATMR]
+
+query I
+SELECT double_metaphone('Harri');
+----
+[HR]
+
+query I
+SELECT double_metaphone('Seonjong');
+----
+[SNJNK]
+
+query I
+SELECT double_metaphone('Bidam');
+----
+[PTM]
+
+query I
+SELECT double_metaphone('Marta');
+----
+[MRT]
+
+query I
+SELECT double_metaphone('Jakob');
+----
+[JKP, AKP]
+
+query I
+SELECT double_metaphone('Johann');
+----
+[JHN, AHN]
+
+query I
+SELECT double_metaphone('Hande');
+----
+[HNT]
+
+query I
+SELECT double_metaphone('Lonnie');
+----
+[LN]
+
+query I
+SELECT double_metaphone('Tony');
+----
+[TN]
+
+query I
+SELECT double_metaphone('Hagen');
+----
+[HJN, HKN]
+
+query I
+SELECT double_metaphone('Maurice');
+----
+[MRS]
+
+query I
+SELECT double_metaphone('Claudia');
+----
+[KLT]
+
+query I
+SELECT double_metaphone('Minami');
+----
+[MNM]
+
+query I
+SELECT double_metaphone('Madeleine');
+----
+[MTLN]
+
+query I
+SELECT double_metaphone('Ursula');
+----
+[ARSL]
+
+query I
+SELECT double_metaphone('Kristofer');
+----
+[KRSTFR]
+
+query I
+SELECT double_metaphone('Winfried');
+----
+[ANFRT, FNFRT]
+
+query I
+SELECT double_metaphone('Arran');
+----
+[ARN]
+
+query I
+SELECT double_metaphone('Paulus');
+----
+[PLS]
+
+query I
+SELECT double_metaphone('Kiyoko');
+----
+[KK]
+
+query I
+SELECT double_metaphone('Roswitha');
+----
+[RS0, RST]
+
+query I
+SELECT double_metaphone('Uwe');
+----
+[A]
+
+query I
+SELECT double_metaphone('Lilly');
+----
+[LL]
+
+query I
+SELECT double_metaphone('Damion');
+----
+[TMN]
+
+query I
+SELECT double_metaphone('Dagnė');
+----
+[TN, TKN]
+
+query I
+SELECT double_metaphone('Lamba');
+----
+[LMP]
+
+query I
+SELECT double_metaphone('Giuseppe');
+----
+[JSP, KSP]
+
+query I
+SELECT double_metaphone('Baldwin');
+----
+[PLTN]
+
+query I
+SELECT double_metaphone('Yasemin');
+----
+[ASMN]
+
+query I
+SELECT double_metaphone('Koji');
+----
+[KJ]
+
+query I
+SELECT double_metaphone('Jani');
+----
+[JN, AN]
+
+query I
+SELECT double_metaphone('Veronica');
+----
+[FRNK]
+
+query I
+SELECT double_metaphone('Granville');
+----
+[KRNFL]
+
+query I
+SELECT double_metaphone('Cipriano');
+----
+[SPRN]
+
+query I
+SELECT double_metaphone('Gholamreza');
+----
+[KLMRS]
+
+query I
+SELECT double_metaphone('Tamás');
+----
+[TMS]
+
+query I
+SELECT double_metaphone('Dietmar');
+----
+[TTMR]
+
+query I
+SELECT double_metaphone('Abu');
+----
+[AP]
+
+query I
+SELECT double_metaphone('Dai');
+----
+[T]
+
+query I
+SELECT double_metaphone('Corinth');
+----
+[KRN0, KRNT]
+
+query I
+SELECT double_metaphone('Raymond');
+----
+[RMNT]
+
+query I
+SELECT double_metaphone('Don');
+----
+[TN]
+
+query I
+SELECT double_metaphone('Jenő');
+----
+[JN, AN]
+
+query I
+SELECT double_metaphone('Steve');
+----
+[STF]
+
+query I
+SELECT double_metaphone('Kurushima');
+----
+[KRXM]
+
+query I
+SELECT double_metaphone('Francesco');
+----
+[FRNSSK]
+
+query I
+SELECT double_metaphone('Cyriacus');
+----
+[SRKS]
+
+query I
+SELECT double_metaphone('Jehan');
+----
+[JHN, AHN]
+
+query I
+SELECT double_metaphone('Daniele');
+----
+[TNL]
+
+query I
+SELECT double_metaphone('Agnese');
+----
+[AKNS, ANS]
+
+query I
+SELECT double_metaphone('Anikó');
+----
+[ANK]
+
+query I
+SELECT double_metaphone('Tōyama');
+----
+[TM]
+
+query I
+SELECT double_metaphone('Nándor');
+----
+[NNTR]
+
+query I
+SELECT double_metaphone('Margrit');
+----
+[MRKRT]
+
+query I
+SELECT double_metaphone('Márta');
+----
+[MRT]
+
+query I
+SELECT double_metaphone('Erzsébet');
+----
+[ARSSPT]
+
+query I
+SELECT double_metaphone('Hiroyuki');
+----
+[HRK]
+
+query I
+SELECT double_metaphone('Teemu');
+----
+[TM]
+
+query I
+SELECT double_metaphone('Murray');
+----
+[MR]
+
+query I
+SELECT double_metaphone('Nuria');
+----
+[NR]
+
+query I
+SELECT double_metaphone('Frano');
+----
+[FRN]
+
+query I
+SELECT double_metaphone('Leire');
+----
+[LR]
+
+query I
+SELECT double_metaphone('Kamran');
+----
+[KMRN]
+
+query I
+SELECT double_metaphone('Dachs');
+----
+[TKS]
+
+query I
+SELECT double_metaphone('Gun');
+----
+[KN]
+
+query I
+SELECT double_metaphone('Gerold');
+----
+[KRLT, JRLT]
+
+query I
+SELECT double_metaphone('Marion');
+----
+[MRN]
+
+query I
+SELECT double_metaphone('Jakub');
+----
+[JKP, AKP]
+
+query I
+SELECT double_metaphone('Arnošt');
+----
+[ARNT]
+
+query I
+SELECT double_metaphone('Huangfu');
+----
+[HNKF]
+
+query I
+SELECT double_metaphone('Ronan');
+----
+[RNN]
+
+query I
+SELECT double_metaphone('Filomeno');
+----
+[FLMN]
+
+query I
+SELECT double_metaphone('Roscoe');
+----
+[RSK]
+
+query I
+SELECT double_metaphone('Sebastián');
+----
+[SPSTN]
+
+query I
+SELECT double_metaphone('Andrzej');
+----
+[ANTRSJ, 'ANTRS ']
+
+query I
+SELECT double_metaphone('Camilla');
+----
+[KML, KM]
+
+query I
+SELECT double_metaphone('Mic');
+----
+[MK]
+
+query I
+SELECT double_metaphone('Anh');
+----
+[AN]
+
+query I
+SELECT double_metaphone('Danijel');
+----
+[TNJL]
+
+query I
+SELECT double_metaphone('Dóra');
+----
+[TR]
+
+query I
+SELECT double_metaphone('Daisy');
+----
+[TS]
+
+query I
+SELECT double_metaphone('Domokos');
+----
+[TMKS]
+
+query I
+SELECT double_metaphone('Deanna');
+----
+[TN]
+
+query I
+SELECT double_metaphone('Delroy');
+----
+[TLR]
+
+query I
+SELECT double_metaphone('Delsey');
+----
+[TLS]
+
+query I
+SELECT double_metaphone('Aki');
+----
+[AK]
+
+query I
+SELECT double_metaphone('Saliou');
+----
+[SL]
+
+query I
+SELECT double_metaphone('Chieko');
+----
+[XK]
+
+query I
+SELECT double_metaphone('Nicole');
+----
+[NKL]
+
+query I
+SELECT double_metaphone('Yegor');
+----
+[AKR]
+
+query I
+SELECT double_metaphone('Ognyana');
+----
+[AKNN, ANN]
+
+query I
+SELECT double_metaphone('Gianni');
+----
+[JN, KN]
+
+query I
+SELECT double_metaphone('Lucius');
+----
+[LSS]
+
+query I
+SELECT double_metaphone('Lope');
+----
+[LP]
+
+query I
+SELECT double_metaphone('Ryōko');
+----
+[RK]
+
+query I
+SELECT double_metaphone('Gunther');
+----
+[KN0R, KNTR]
+
+query I
+SELECT double_metaphone('Vincent');
+----
+[FNSNT]
+
+query I
+SELECT double_metaphone('Ladáry');
+----
+[LTR]
+
+query I
+SELECT double_metaphone('Cuba');
+----
+[KP]
+
+query I
+SELECT double_metaphone('Ray');
+----
+[R]
+
+query I
+SELECT double_metaphone('Gergely');
+----
+[KRJL, JRKL]
+
+query I
+SELECT double_metaphone('Zádor');
+----
+[STR]
+
+query I
+SELECT double_metaphone('Taishi');
+----
+[TX]
+
+query I
+SELECT double_metaphone('Dagoberto');
+----
+[TKPRT]
+
+query I
+SELECT double_metaphone('L''Imam');
+----
+[LMM]
+
+query I
+SELECT double_metaphone('Danuta');
+----
+[TNT]
+
+query I
+SELECT double_metaphone('Daochos');
+----
+[TXS, TKS]
+
+query I
+SELECT double_metaphone('Torge');
+----
+[TRJ, TRK]
+
+query I
+SELECT double_metaphone('Hervé');
+----
+[HRF]
+
+query I
+SELECT double_metaphone('Hemptah');
+----
+[HMPT]
+
+query I
+SELECT double_metaphone('Tielman');
+----
+[TLMN]
+
+query I
+SELECT double_metaphone('Mészáros');
+----
+[MSRS, MXRS]
+
+query I
+SELECT double_metaphone('Prochorus');
+----
+[PRXRS, PRKRS]
+
+query I
+SELECT double_metaphone('Aminata');
+----
+[AMNT]
+
+query I
+SELECT double_metaphone('Nobuyuki');
+----
+[NPK]
+
+query I
+SELECT double_metaphone('Desislava');
+----
+[TSLF]
+
+query I
+SELECT double_metaphone('Dorit');
+----
+[TRT]
+
+query I
+SELECT double_metaphone('Amitabh');
+----
+[AMTP]
+
+query I
+SELECT double_metaphone('Lech');
+----
+[LK]
+
+query I
+SELECT double_metaphone('Taichang');
+----
+[TXNK, TKNK]
+
+query I
+SELECT double_metaphone('Annelise');
+----
+[ANLS]
+
+query I
+SELECT double_metaphone('Catherine');
+----
+[K0RN, KTRN]
+
+query I
+SELECT double_metaphone('Alain');
+----
+[ALN]
+
+query I
+SELECT double_metaphone('Réal');
+----
+[RL]
+
+query I
+SELECT double_metaphone('Bruce');
+----
+[PRS]
+
+query I
+SELECT double_metaphone('Aëtius');
+----
+[ATS]
+
+query I
+SELECT double_metaphone('Unto');
+----
+[ANT]
+
+query I
+SELECT double_metaphone('Erkki');
+----
+[ARK]
+
+query I
+SELECT double_metaphone('Eleanor');
+----
+[ALNR]
+
+query I
+SELECT double_metaphone('Célia');
+----
+[KL]
+
+query I
+SELECT double_metaphone('Duccio');
+----
+[TX]
+
+query I
+SELECT double_metaphone('Fran');
+----
+[FRN]
+
+query I
+SELECT double_metaphone('Mariska');
+----
+[MRSK]
+
+query I
+SELECT double_metaphone('Cheick');
+----
+[XK]
+
+query I
+SELECT double_metaphone('Avempace');
+----
+[AFMPS]
+
+query I
+SELECT double_metaphone('Klaas-Jan');
+----
+[KLSJN]
+
+query I
+SELECT double_metaphone('Herlaug');
+----
+[HRLK]
+
+query I
+SELECT double_metaphone('Tryggve');
+----
+[TRKF]
+
+query I
+SELECT double_metaphone('Domino');
+----
+[TMN]
+
+query I
+SELECT double_metaphone('Benoît');
+----
+[PNT]
+
+query I
+SELECT double_metaphone('Hafez');
+----
+[HFS]
+
+query I
+SELECT double_metaphone('Leanne');
+----
+[LN]
+
+query I
+SELECT double_metaphone('Beatrice');
+----
+[PTRS]
+
+query I
+SELECT double_metaphone('Burak');
+----
+[PRK]
+
+query I
+SELECT double_metaphone('Ngawang');
+----
+[NKNK]
+
+query I
+SELECT double_metaphone('Charles-Ange');
+----
+[XRLSNJ, XRLSNK]
+
+query I
+SELECT double_metaphone('Bror');
+----
+[PRR]
+
+query I
+SELECT double_metaphone('Lita');
+----
+[LT]
+
+query I
+SELECT double_metaphone('Edmar');
+----
+[ATMR]
+
+query I
+SELECT double_metaphone('Maw''dud');
+----
+[MTT]
+
+query I
+SELECT double_metaphone('Drake');
+----
+[TRK]
+
+query I
+SELECT double_metaphone('Marquess');
+----
+[MRKS]
+
+query I
+SELECT double_metaphone('Connor');
+----
+[KNR]
+
+query I
+SELECT double_metaphone('Nathaniel');
+----
+[N0NL, NTNL]
+
+query I
+SELECT double_metaphone('Kesha');
+----
+[KX]
+
+query I
+SELECT double_metaphone('Alois-Konstantin');
+----
+[ALSKNS]
+
+query I
+SELECT double_metaphone('Deborah');
+----
+[TPR]
+
+query I
+SELECT double_metaphone('Arno');
+----
+[ARN]
+
+query I
+SELECT double_metaphone('Uta');
+----
+[AT]
+
+query I
+SELECT double_metaphone('Rosalyn');
+----
+[RSLN]
+
+query I
+SELECT double_metaphone('Diego');
+----
+[TK]
+
+query I
+SELECT double_metaphone('Gumprecht');
+----
+[KMPRKT]
+
+query I
+SELECT double_metaphone('Wieland');
+----
+[ALNT, FLNT]
+
+query I
+SELECT double_metaphone('Wigand');
+----
+[AKNT, FKNT]
+
+query I
+SELECT double_metaphone('Toby');
+----
+[TP]
+
+query I
+SELECT double_metaphone('Lambert');
+----
+[LMPRT]
+
+query I
+SELECT double_metaphone('Romy');
+----
+[RM]
+
+query I
+SELECT double_metaphone('Sixtus');
+----
+[SKSTS]
+
+query I
+SELECT double_metaphone('Winona');
+----
+[ANN, FNN]
+
+query I
+SELECT double_metaphone('Helwin');
+----
+[HLN]
+
+query I
+SELECT double_metaphone('Arnulf');
+----
+[ARNLF]
+
+query I
+SELECT double_metaphone('Liselotte');
+----
+[LSLT]
+
+query I
+SELECT double_metaphone('Antonia');
+----
+[ANTN]
+
+query I
+SELECT double_metaphone('Wendelin');
+----
+[ANTLN, FNTLN]
+
+query I
+SELECT double_metaphone('Wolf-Werner');
+----
+[ALFRNR, FLFRNR]
+
+query I
+SELECT double_metaphone('Denman');
+----
+[TNMN]
+
+query I
+SELECT double_metaphone('René');
+----
+[RN]
+
+query I
+SELECT double_metaphone('Mia');
+----
+[M]
+
+query I
+SELECT double_metaphone('Hilmar');
+----
+[HLMR]
+
+query I
+SELECT double_metaphone('Belhe');
+----
+[PL]
+
+query I
+SELECT double_metaphone('Nikita');
+----
+[NKT]
+
+query I
+SELECT double_metaphone('Gian-Franco');
+----
+[JNFRNK, KNFRNK]
+
+query I
+SELECT double_metaphone('Robbie');
+----
+[RP]
+
+query I
+SELECT double_metaphone('Ismet');
+----
+[ASMT]
+
+query I
+SELECT double_metaphone('Marlon');
+----
+[MRLN]
+
+query I
+SELECT double_metaphone('Franz-Zeno');
+----
+[FRNSSN]
+
+query I
+SELECT double_metaphone('Pia');
+----
+[P]
+
+query I
+SELECT double_metaphone('Amalie');
+----
+[AML]
+
+query I
+SELECT double_metaphone('Hans-Jochen');
+----
+[HNSJXN, HNSJKN]
+
+query I
+SELECT double_metaphone('Ercan');
+----
+[ARKN]
+
+query I
+SELECT double_metaphone('Jörn');
+----
+[JRN, ARN]
+
+query I
+SELECT double_metaphone('Odfried');
+----
+[ATFRT]
+
+query I
+SELECT double_metaphone('Augustinus');
+----
+[AKSTNS]
+
+query I
+SELECT double_metaphone('Aurel');
+----
+[ARL]
+
+query I
+SELECT double_metaphone('Avi');
+----
+[AF]
+
+query I
+SELECT double_metaphone('Jeremie');
+----
+[JRM, ARM]
+
+query I
+SELECT double_metaphone('Kikuchi');
+----
+[KKX, KKK]
+
+query I
+SELECT double_metaphone('Fridolin');
+----
+[FRTLN]
+
+query I
+SELECT double_metaphone('Mervyn');
+----
+[MRFN]
+
+query I
+SELECT double_metaphone('Larissa');
+----
+[LRS]
+
+query I
+SELECT double_metaphone('Herrmann');
+----
+[HRMN]
+
+query I
+SELECT double_metaphone('Marieluise');
+----
+[MRLS]
+
+query I
+SELECT double_metaphone('Imke');
+----
+[AMK]
+
+query I
+SELECT double_metaphone('Caren');
+----
+[KRN]
+
+query I
+SELECT double_metaphone('Lov');
+----
+[LF]
+
+query I
+SELECT double_metaphone('Philipp-Ernst');
+----
+[FLPRNS]
+
+query I
+SELECT double_metaphone('Austin');
+----
+[ASTN]
+
+query I
+SELECT double_metaphone('Adelog');
+----
+[ATLK]
+
+query I
+SELECT double_metaphone('Remigija');
+----
+[RMJJ, RMKH]
+
+query I
+SELECT double_metaphone('Greta');
+----
+[KRT]
+
+query I
+SELECT double_metaphone('Tamzin');
+----
+[TMSN]
+
+query I
+SELECT double_metaphone('Phyllis');
+----
+[FLS]
+
+query I
+SELECT double_metaphone('Ashley');
+----
+[AXL]
+
+query I
+SELECT double_metaphone('Valeria');
+----
+[FLR]
+
+query I
+SELECT double_metaphone('Mercedes');
+----
+[MRSTS]
+
+query I
+SELECT double_metaphone('Chloe');
+----
+[KL]
+
+query I
+SELECT double_metaphone('Neheb');
+----
+[NHP]
+
+query I
+SELECT double_metaphone('Joan');
+----
+[JN, AN]
+
+query I
+SELECT double_metaphone('Fiona');
+----
+[FN]
+
+query I
+SELECT double_metaphone('Emilio');
+----
+[AML]
+
+query I
+SELECT double_metaphone('Aristidis');
+----
+[ARSTTS]
+
+query I
+SELECT double_metaphone('Minori');
+----
+[MNR]
+
+query I
+SELECT double_metaphone('Xenia');
+----
+[SN]
+
+query I
+SELECT double_metaphone('Lyudmila');
+----
+[LTML]
+
+query I
+SELECT double_metaphone('Nanako');
+----
+[NNK]
+
+query I
+SELECT double_metaphone('Tolga');
+----
+[TLK]
+
+query I
+SELECT double_metaphone('Dorian');
+----
+[TRN]
+
+query I
+SELECT double_metaphone('Vilma');
+----
+[FLM]
+
+query I
+SELECT double_metaphone('Roxanne');
+----
+[RKSN]
+
+query I
+SELECT double_metaphone('Loreena');
+----
+[LRN]
+
+query I
+SELECT double_metaphone('Dee');
+----
+[T]
+
+query I
+SELECT double_metaphone('Camille');
+----
+[KML]
+
+query I
+SELECT double_metaphone('Edwige');
+----
+[ATJ, ATK]
+
+query I
+SELECT double_metaphone('Ieng');
+----
+[ANK]
+
+query I
+SELECT double_metaphone('Asha');
+----
+[AX]
+
+query I
+SELECT double_metaphone('Rory');
+----
+[RR]
+
+query I
+SELECT double_metaphone('Andranik');
+----
+[ANTRNK]
+
+query I
+SELECT double_metaphone('Chantal');
+----
+[XNTL]
+
+query I
+SELECT double_metaphone('Charmaine');
+----
+[XRMN]
+
+query I
+SELECT double_metaphone('Kathy');
+----
+[K0, KT]
+
+query I
+SELECT double_metaphone('Luciana');
+----
+[LSN, LXN]
+
+query I
+SELECT double_metaphone('Haya');
+----
+[H]
+
+query I
+SELECT double_metaphone('Polly');
+----
+[PL]
+
+query I
+SELECT double_metaphone('Alisha');
+----
+[ALX]
+
+query I
+SELECT double_metaphone('Patriarch');
+----
+[PTRRX, PTRRK]
+
+query I
+SELECT double_metaphone('Molla');
+----
+[ML]
+
+query I
+SELECT double_metaphone('Yolande');
+----
+[ALNT]
+
+query I
+SELECT double_metaphone('Sylviane');
+----
+[SLFN]
+
+query I
+SELECT double_metaphone('Archie');
+----
+[ARX, ARK]
+
+query I
+SELECT double_metaphone('Alkis');
+----
+[ALKS]
+
+query I
+SELECT double_metaphone('Hila');
+----
+[HL]
+
+query I
+SELECT double_metaphone('Salvio');
+----
+[SLF]
+
+query I
+SELECT double_metaphone('Ezzaki');
+----
+[ASK, ATSK]
+
+query I
+SELECT double_metaphone('Raina');
+----
+[RN]
+
+query I
+SELECT double_metaphone('Lissie');
+----
+[LS]
+
+query I
+SELECT double_metaphone('Chelan');
+----
+[XLN]
+
+query I
+SELECT double_metaphone('Tiaa');
+----
+[X]
+
+query I
+SELECT double_metaphone('Kenza');
+----
+[KNS, KNTS]
+
+query I
+SELECT double_metaphone('Fusako');
+----
+[FSK]
+
+query I
+SELECT double_metaphone('Arleen');
+----
+[ARLN]
+
+query I
+SELECT double_metaphone('Brigid');
+----
+[PRJT, PRKT]
+
+query I
+SELECT double_metaphone('Amintore');
+----
+[AMNTR]
+
+query I
+SELECT double_metaphone('Norina');
+----
+[NRN]
+
+query I
+SELECT double_metaphone('Mythili');
+----
+[M0L, MTL]
+
+query I
+SELECT double_metaphone('Karthika');
+----
+[KR0K, KRTK]
+
+query I
+SELECT double_metaphone('Takeshi');
+----
+[TKX]
+
+query I
+SELECT double_metaphone('Lecomte');
+----
+[LKMT]
+
+query I
+SELECT double_metaphone('Edna');
+----
+[ATN]
+
+query I
+SELECT double_metaphone('Hertta');
+----
+[HRT]
+
+query I
+SELECT double_metaphone('Mayumi');
+----
+[MM]
+
+query I
+SELECT double_metaphone('Ansgarde');
+----
+[ANSKRT]
+
+query I
+SELECT double_metaphone('Valaida');
+----
+[FLT]
+
+query I
+SELECT double_metaphone('Sita');
+----
+[ST]
+
+query I
+SELECT double_metaphone('Benoîte');
+----
+[PNT]
+
+query I
+SELECT double_metaphone('EliZe');
+----
+[ALS]
+
+query I
+SELECT double_metaphone('Frits');
+----
+[FRTS]
+
+query I
+SELECT double_metaphone('Hippolyte');
+----
+[HPLT]
+
+query I
+SELECT double_metaphone('Marisha');
+----
+[MRX]
+
+query I
+SELECT double_metaphone('Chitral');
+----
+[XTRL]
+
+query I
+SELECT double_metaphone('Aleska');
+----
+[ALSK]
+
+query I
+SELECT double_metaphone('Tiny');
+----
+[TN]
+
+query I
+SELECT double_metaphone('Karel');
+----
+[KRL]
+
+query I
+SELECT double_metaphone('Salvator');
+----
+[SLFTR]
+
+query I
+SELECT double_metaphone('Gökdeniz');
+----
+[KKTNS, KKTNTS]
+
+query I
+SELECT double_metaphone('Robb');
+----
+[RP]
+
+query I
+SELECT double_metaphone('Xabi');
+----
+[SP]
+
+query I
+SELECT double_metaphone('Ventura');
+----
+[FNTR]
+
+query I
+SELECT double_metaphone('Ulises');
+----
+[ALSS]
+
+query I
+SELECT double_metaphone('Bertus');
+----
+[PRTS]
+
+query I
+SELECT double_metaphone('Gianpiero');
+----
+[JNPR, KNPR]
+
+query I
+SELECT double_metaphone('Genndy');
+----
+[JNT, KNT]
+
+query I
+SELECT double_metaphone('Sisebut');
+----
+[SSPT]
+
+query I
+SELECT double_metaphone('Luan');
+----
+[LN]
+
+query I
+SELECT double_metaphone('Thrasybulus');
+----
+[0RSPLS, TRSPLS]
+
+query I
+SELECT double_metaphone('Alvise');
+----
+[ALFS]
+
+query I
+SELECT double_metaphone('Philo');
+----
+[FL]
+
+query I
+SELECT double_metaphone('Bořivoj');
+----
+[PFJ, 'PF ']
+
+query I
+SELECT double_metaphone('Khamtai');
+----
+[KMT]
+
+query I
+SELECT double_metaphone('Nicomachus');
+----
+[NKMKS]
+
+query I
+SELECT double_metaphone('Brendon');
+----
+[PRNTN]
+
+query I
+SELECT double_metaphone('Sámal');
+----
+[SML]
+
+query I
+SELECT double_metaphone('Alphonse');
+----
+[ALFNS]
+
+query I
+SELECT double_metaphone('Dame');
+----
+[TM]
+
+query I
+SELECT double_metaphone('Michihiko');
+----
+[MXHK, MKHK]
+
+query I
+SELECT double_metaphone('Go-Horikawa');
+----
+[KRK]
+
+query I
+SELECT double_metaphone('Adler');
+----
+[ATLR]
+
+query I
+SELECT double_metaphone('Jaleel');
+----
+[JLL, ALL]
+
+query I
+SELECT double_metaphone('Domitien');
+----
+[TMTN]
+
+query I
+SELECT double_metaphone('Ihsan');
+----
+[ASN]
+
+query I
+SELECT double_metaphone('Bradley');
+----
+[PRTL]
+
+query I
+SELECT double_metaphone('Bertha');
+----
+[PR0, PRT]
+
+query I
+SELECT double_metaphone('Clancy');
+----
+[KLNS]
+
+query I
+SELECT double_metaphone('Steinunn');
+----
+[STNN]
+
+query I
+SELECT double_metaphone('Long');
+----
+[LNK]
+
+query I
+SELECT double_metaphone('Lucky');
+----
+[LK]
+
+query I
+SELECT double_metaphone('Athanasius');
+----
+[A0NSS, ATNSS]
+
+query I
+SELECT double_metaphone('Sona');
+----
+[SN]
+
+query I
+SELECT double_metaphone('Bascha');
+----
+[PX]
+
+query I
+SELECT double_metaphone('Dajos');
+----
+[TJS, THS]
+
+query I
+SELECT double_metaphone('Jacques-Louis');
+----
+[JKSLS, AKSLS]
+
+query I
+SELECT double_metaphone('Flex');
+----
+[FLKS]
+
+query I
+SELECT double_metaphone('Dominikus');
+----
+[TMNKS]
+
+query I
+SELECT double_metaphone('Krzysztof');
+----
+[KRSSTF, KRTSXT]
+
+query I
+SELECT double_metaphone('Willibrord');
+----
+[ALPRRT, FLPRRT]
+
+query I
+SELECT double_metaphone('Ángeles');
+----
+[NJLS, NKLS]
+
+query I
+SELECT double_metaphone('Honoratus');
+----
+[HNRTS]
+
+query I
+SELECT double_metaphone('Dol');
+----
+[TL]
+
+query I
+SELECT double_metaphone('Ille');
+----
+[AL]
+
+query I
+SELECT double_metaphone('Piligrim');
+----
+[PLKRM]
+
+query I
+SELECT double_metaphone('Anastasia');
+----
+[ANSTS, ANSTX]
+
+query I
+SELECT double_metaphone('Yılmaz');
+----
+[ALMS]
+
+query I
+SELECT double_metaphone('Yassin');
+----
+[ASN]
+
+query I
+SELECT double_metaphone('Lunalilo');
+----
+[LNLL]
+
+query I
+SELECT double_metaphone('Jinsa');
+----
+[JNS, ANS]
+
+query I
+SELECT double_metaphone('Pernell');
+----
+[PRNL]
+
+query I
+SELECT double_metaphone('Mok');
+----
+[MK]
+
+query I
+SELECT double_metaphone('Jimmie');
+----
+[JM, AM]
+
+query I
+SELECT double_metaphone('Okan');
+----
+[AKN]
+
+query I
+SELECT double_metaphone('Geeta');
+----
+[JT, KT]
+
+query I
+SELECT double_metaphone('Nguyen');
+----
+[NKN]
+
+query I
+SELECT double_metaphone('Jabi');
+----
+[JP, AP]
+
+query I
+SELECT double_metaphone('Garett');
+----
+[KRT]
+
+query I
+SELECT double_metaphone('Ancillo');
+----
+[ANSL, ANS]
+
+query I
+SELECT double_metaphone('Anatoli');
+----
+[ANTL]
+
+query I
+SELECT double_metaphone('Pina');
+----
+[PN]
+
+query I
+SELECT double_metaphone('Andris');
+----
+[ANTRS]
+
+query I
+SELECT double_metaphone('Fabián');
+----
+[FPN]
+
+query I
+SELECT double_metaphone('Jochem');
+----
+[JXM, AKM]
+
+query I
+SELECT double_metaphone('Vihtori');
+----
+[FTR]
+
+query I
+SELECT double_metaphone('Jiro');
+----
+[JR, AR]
+
+query I
+SELECT double_metaphone('Samgeun');
+----
+[SMJN, SMKN]
+
+query I
+SELECT double_metaphone('Alparslan');
+----
+[ALPRSL]
+
+query I
+SELECT double_metaphone('Patricio');
+----
+[PTRS, PTRX]
+
+query I
+SELECT double_metaphone('Ottone');
+----
+[ATN]
+
+query I
+SELECT double_metaphone('Normand');
+----
+[NRMNT]
+
+query I
+SELECT double_metaphone('Munif');
+----
+[MNF]
+
+query I
+SELECT double_metaphone('Amyntas');
+----
+[AMNTS]
+
+query I
+SELECT double_metaphone('Amália');
+----
+[AML]
+
+query I
+SELECT double_metaphone('Jinji');
+----
+[JNJ, ANJ]
+
+query I
+SELECT double_metaphone('Rhyu');
+----
+[R]
+
+query I
+SELECT double_metaphone('Soseong');
+----
+[SSNK]
+
+query I
+SELECT double_metaphone('Ōtomo');
+----
+[TM]
+
+query I
+SELECT double_metaphone('Naoya');
+----
+[N]
+
+query I
+SELECT double_metaphone('Co');
+----
+[K]
+
+query I
+SELECT double_metaphone('Pope');
+----
+[PP]
+
+query I
+SELECT double_metaphone('Mahmoud');
+----
+[MMT]
+
+query I
+SELECT double_metaphone('Tareck');
+----
+[TRK]
+
+query I
+SELECT double_metaphone('O');
+----
+[A]
+
+query I
+SELECT double_metaphone('Andria');
+----
+[ANTR]
+
+query I
+SELECT double_metaphone('Andros');
+----
+[ANTRS]
+
+query I
+SELECT double_metaphone('Admetus');
+----
+[ATMTS]
+
+query I
+SELECT double_metaphone('Borys');
+----
+[PRS]
+
+query I
+SELECT double_metaphone('Kimmo');
+----
+[KM]
+
+query I
+SELECT double_metaphone('Igort');
+----
+[AKRT]
+
+query I
+SELECT double_metaphone('Beop');
+----
+[PP]
+
+query I
+SELECT double_metaphone('Uija');
+----
+[AJ, AH]
+
+query I
+SELECT double_metaphone('Avner');
+----
+[AFNR]
+
+query I
+SELECT double_metaphone('Celestyn');
+----
+[SLSTN]
+
+query I
+SELECT double_metaphone('Giuliano');
+----
+[JLN, KLN]
+
+query I
+SELECT double_metaphone('Goetz');
+----
+[KTS]
+
+query I
+SELECT double_metaphone('Peter-Tobias');
+----
+[PTRTPS]
+
+query I
+SELECT double_metaphone('Percival');
+----
+[PRSFL]
+
+query I
+SELECT double_metaphone('DeJuan');
+----
+[TJN]
+
+query I
+SELECT double_metaphone('Frédéric-César');
+----
+[FRTRKK]
+
+query I
+SELECT double_metaphone('Severian');
+----
+[SFRN]
+
+query I
+SELECT double_metaphone('Petermann');
+----
+[PTRMN]
+
+query I
+SELECT double_metaphone('Ernest');
+----
+[ARNST]
+
+query I
+SELECT double_metaphone('Kolbeinn');
+----
+[KLPN]
+
+query I
+SELECT double_metaphone('Heini');
+----
+[HN]
+
+query I
+SELECT double_metaphone('Amedeo');
+----
+[AMT]
+
+query I
+SELECT double_metaphone('Guda');
+----
+[KT]
+
+query I
+SELECT double_metaphone('Sigfried');
+----
+[SKFRT]
+
+query I
+SELECT double_metaphone('Konstanze');
+----
+[KNSTNS, KNSTNT]
+
+query I
+SELECT double_metaphone('Relson');
+----
+[RLSN]
+
+query I
+SELECT double_metaphone('Rohat');
+----
+[RHT]
+
+query I
+SELECT double_metaphone('Salima');
+----
+[SLM]
+
+query I
+SELECT double_metaphone('Marcantonio');
+----
+[MRKNTN]
+
+query I
+SELECT double_metaphone('Rosanna');
+----
+[RSN]
+
+query I
+SELECT double_metaphone('Serikbay');
+----
+[SRKP]
+
+query I
+SELECT double_metaphone('Pipilotti');
+----
+[PPLT]
+
+query I
+SELECT double_metaphone('Vitali');
+----
+[FTL]
+
+query I
+SELECT double_metaphone('Ğäbdräşit');
+----
+[PTRT]
+
+query I
+SELECT double_metaphone('Grytzko');
+----
+[KRTSK]
+
+query I
+SELECT double_metaphone('Ales');
+----
+[ALS]
+
+query I
+SELECT double_metaphone('Gundolf');
+----
+[KNTLF]
+
+query I
+SELECT double_metaphone('Grétar');
+----
+[KRTR]
+
+query I
+SELECT double_metaphone('Radosav');
+----
+[RTSF]
+
+query I
+SELECT double_metaphone('Ramush');
+----
+[RMX]
+
+query I
+SELECT double_metaphone('Amon');
+----
+[AMN]
+
+query I
+SELECT double_metaphone('Olaus');
+----
+[ALS]
+
+query I
+SELECT double_metaphone('Bartholomew');
+----
+[PR0LM, PRTLMF]
+
+query I
+SELECT double_metaphone('Shahnawaz');
+----
+[XNS, XNTS]
+
+query I
+SELECT double_metaphone('Jacopo');
+----
+[JKP, AKP]
+
+query I
+SELECT double_metaphone('Devon');
+----
+[TFN]
+
+query I
+SELECT double_metaphone('Jacopone');
+----
+[JKPN, AKPN]
+
+query I
+SELECT double_metaphone('Phraates');
+----
+[FRTS]
+
+query I
+SELECT double_metaphone('Evagrius');
+----
+[AFKRS]
+
+query I
+SELECT double_metaphone('Tenjiku');
+----
+[TNJK]
+
+query I
+SELECT double_metaphone('Egill');
+----
+[AJL, AKL]
+
+query I
+SELECT double_metaphone('Ties');
+----
+[TS]
+
+query I
+SELECT double_metaphone('Abisares');
+----
+[APSRS]
+
+query I
+SELECT double_metaphone('Marie-Dominique');
+----
+[MRTMNK]
+
+query I
+SELECT double_metaphone('Øivind');
+----
+[FNT]
+
+query I
+SELECT double_metaphone('Roque');
+----
+[RK]
+
+query I
+SELECT double_metaphone('Stepan');
+----
+[STPN]
+
+query I
+SELECT double_metaphone('Zurab');
+----
+[SRP]
+
+query I
+SELECT double_metaphone('Desiré-Raoul');
+----
+[TSRRL]
+
+query I
+SELECT double_metaphone('Niceto');
+----
+[NST]
+
+query I
+SELECT double_metaphone('Shayban');
+----
+[XPN]
+
+query I
+SELECT double_metaphone('Erling');
+----
+[ARLNK]
+
+query I
+SELECT double_metaphone('Chlothar');
+----
+[KL0R, KLTR]
+
+query I
+SELECT double_metaphone('Deepak');
+----
+[TPK]
+
+query I
+SELECT double_metaphone('Benedetto');
+----
+[PNTT]
+
+query I
+SELECT double_metaphone('François-Nicolas-Benoît');
+----
+[FRNSSN]
+
+query I
+SELECT double_metaphone('Ehren');
+----
+[ARN]
+
+query I
+SELECT double_metaphone('Theodoros');
+----
+[0TRS, TTRS]
+
+query I
+SELECT double_metaphone('Mordechaj');
+----
+[MRTXJ, 'MRTK ']
+
+query I
+SELECT double_metaphone('Sophus');
+----
+[SFS]
+
+query I
+SELECT double_metaphone('Strato');
+----
+[STRT]
+
+query I
+SELECT double_metaphone('Loris');
+----
+[LRS]
+
+query I
+SELECT double_metaphone('Abigail');
+----
+[APKL]
+
+query I
+SELECT double_metaphone('Wilm');
+----
+[ALM, FLM]
+
+query I
+SELECT double_metaphone('Greil');
+----
+[KRL]
+
+query I
+SELECT double_metaphone('Mascarenhas');
+----
+[MSKRNS]
+
+query I
+SELECT double_metaphone('Eben');
+----
+[APN]
+
+query I
+SELECT double_metaphone('Carl-Adam');
+----
+[KRLTM]
+
+query I
+SELECT double_metaphone('Bularchus');
+----
+[PLRXS, PLRKS]
+
+query I
+SELECT double_metaphone('Aivars');
+----
+[AFRS]
+
+query I
+SELECT double_metaphone('Aide');
+----
+[AT]
+
+query I
+SELECT double_metaphone('Koel');
+----
+[KL]
+
+query I
+SELECT double_metaphone('Agris');
+----
+[AKRS]
+
+query I
+SELECT double_metaphone('Brenton');
+----
+[PRNTN]
+
+query I
+SELECT double_metaphone('Athanasia');
+----
+[A0NS, ATNX]
+
+query I
+SELECT double_metaphone('Darius');
+----
+[TRS]
+
+query I
+SELECT double_metaphone('Takeo');
+----
+[TK]
+
+query I
+SELECT double_metaphone('Saeed');
+----
+[ST]
+
+query I
+SELECT double_metaphone('Kikunae');
+----
+[KKN]
+
+query I
+SELECT double_metaphone('Clementine');
+----
+[KLMNTN]
+
+query I
+SELECT double_metaphone('Beatriz');
+----
+[PTRS]
+
+query I
+SELECT double_metaphone('Santhi');
+----
+[SN0, SNT]
+
+query I
+SELECT double_metaphone('Yukiru');
+----
+[AKR]
+
+query I
+SELECT double_metaphone('Bodil');
+----
+[PTL]
+
+query I
+SELECT double_metaphone('Tarsem');
+----
+[TRSM]
+
+query I
+SELECT double_metaphone('Aníbal');
+----
+[ANPL]
+
+query I
+SELECT double_metaphone('Mahasti');
+----
+[MHST]
+
+query I
+SELECT double_metaphone('Aqua');
+----
+[AK]
+
+query I
+SELECT double_metaphone('Agnieszka');
+----
+[AKNSK, AKNXK]
+
+query I
+SELECT double_metaphone('Déodat');
+----
+[TTT]
+
+query I
+SELECT double_metaphone('Eugénie');
+----
+[AKN]
+
+query I
+SELECT double_metaphone('Agilus');
+----
+[AJLS, AKLS]
+
+query I
+SELECT double_metaphone('Žiga');
+----
+[K]
+
+query I
+SELECT double_metaphone('Stanislao');
+----
+[STNL]
+
+query I
+SELECT double_metaphone('Guttorm');
+----
+[KTRM]
+
+query I
+SELECT double_metaphone('Fourie');
+----
+[FR]
+
+query I
+SELECT double_metaphone('Worthington');
+----
+[AR0NKT, FRTNKT]
+
+query I
+SELECT double_metaphone('Zac');
+----
+[SK]
+
+query I
+SELECT double_metaphone('Satoru');
+----
+[STR]
+
+query I
+SELECT double_metaphone('Faf');
+----
+[FF]
+
+query I
+SELECT double_metaphone('Elżbieta');
+----
+[ALPT]
+
+query I
+SELECT double_metaphone('Rya');
+----
+[R]
+
+query I
+SELECT double_metaphone('Krešimir');
+----
+[KRMR]
+
+query I
+SELECT double_metaphone('Berthe');
+----
+[PR0, PRT]
+
+query I
+SELECT double_metaphone('Lynette');
+----
+[LNT]
+
+query I
+SELECT double_metaphone('Dhyan');
+----
+[TN]
+
+query I
+SELECT double_metaphone('Busy');
+----
+[PS]
+
+query I
+SELECT double_metaphone('Kip');
+----
+[KP]
+
+query I
+SELECT double_metaphone('Winder');
+----
+[ANTR, FNTR]
+
+query I
+SELECT double_metaphone('Aika');
+----
+[AK]
+
+query I
+SELECT double_metaphone('Ailill');
+----
+[ALL]
+
+query I
+SELECT double_metaphone('Takiji');
+----
+[TKJ]
+
+query I
+SELECT double_metaphone('Prateep');
+----
+[PRTP]
+
+query I
+SELECT double_metaphone('Mauritius');
+----
+[MRTS]
+
+query I
+SELECT double_metaphone('Guram');
+----
+[KRM]
+
+query I
+SELECT double_metaphone('NoClue');
+----
+[NKL]
+
+query I
+SELECT double_metaphone('Hsu');
+----
+[S]
+
+query I
+SELECT double_metaphone('Izumi');
+----
+[ASM]
+
+query I
+SELECT double_metaphone('Túlio');
+----
+[TL]
+
+query I
+SELECT double_metaphone('Amalia');
+----
+[AML]
+
+query I
+SELECT double_metaphone('Ene');
+----
+[AN]
+
+query I
+SELECT double_metaphone('Liesbeth');
+----
+[LSP0, LSPT]
+
+query I
+SELECT double_metaphone('Annia');
+----
+[AN]
+
+query I
+SELECT double_metaphone('Evert');
+----
+[AFRT]
+
+query I
+SELECT double_metaphone('Jayne');
+----
+[JN, AN]
+
+query I
+SELECT double_metaphone('Ani');
+----
+[AN]
+
+query I
+SELECT double_metaphone('Wanderlei');
+----
+[ANTRL, FNTRL]
+
+query I
+SELECT double_metaphone('Lize');
+----
+[LS]
+
+query I
+SELECT double_metaphone('Shajar');
+----
+[XJR, XHR]
+
+query I
+SELECT double_metaphone('Nehemiah');
+----
+[NHM]
+
+query I
+SELECT double_metaphone('Jacques-Laurent');
+----
+[JKSLRN, AKSLRN]
+
+query I
+SELECT double_metaphone('Aristarchus');
+----
+[ARSTRX, ARSTRK]
+
+query I
+SELECT double_metaphone('Meritxell');
+----
+[MRTKSL]
+
+query I
+SELECT double_metaphone('Hildebold');
+----
+[HLTPLT]
+
+query I
+SELECT double_metaphone('Nedda');
+----
+[NT]
+
+query I
+SELECT double_metaphone('Naru');
+----
+[NR]
+
+query I
+SELECT double_metaphone('Amalrich');
+----
+[AMLRX, AMLRK]
+
+query I
+SELECT double_metaphone('Joya');
+----
+[J, A]
+
+query I
+SELECT double_metaphone('Wilt');
+----
+[ALT, FLT]
+
+query I
+SELECT double_metaphone('Abar');
+----
+[APR]
+
+query I
+SELECT double_metaphone('Gelindo');
+----
+[KLNT, JLNT]
+
+query I
+SELECT double_metaphone('En');
+----
+[AN]
+
+query I
+SELECT double_metaphone('Zeyyat');
+----
+[ST]
+
+query I
+SELECT double_metaphone('Ze''ev');
+----
+[SF]
+
+query I
+SELECT double_metaphone('T.I.');
+----
+[T]
+
+query I
+SELECT double_metaphone('Naruhito');
+----
+[NRHT]
+
+query I
+SELECT double_metaphone('Frankétienne');
+----
+[FRNKTN]
+
+query I
+SELECT double_metaphone('Dionysios');
+----
+[TNSS, TNXS]
+
+query I
+SELECT double_metaphone('Sin-Itiro');
+----
+[SNTR]
+
+query I
+SELECT double_metaphone('Bon');
+----
+[PN]
+
+query I
+SELECT double_metaphone('Maxentius');
+----
+[MKSNTS]
+
+query I
+SELECT double_metaphone('Irenaeus');
+----
+[ARNS]
+
+query I
+SELECT double_metaphone('Moyamu');
+----
+[MM]
+
+query I
+SELECT double_metaphone('Turpilius');
+----
+[TRPLS]
+
+query I
+SELECT double_metaphone('Almir');
+----
+[ALMR]
+
+query I
+SELECT double_metaphone('Fong');
+----
+[FNK]
+
+query I
+SELECT double_metaphone('Andimuthu');
+----
+[ANTM0, ANTMT]
+
+query I
+SELECT double_metaphone('Nélson');
+----
+[NLSN]
+
+query I
+SELECT double_metaphone('Vasilis');
+----
+[FSLS]
+
+query I
+SELECT double_metaphone('Titios');
+----
+[TTS]
+
+query I
+SELECT double_metaphone('Heremaia');
+----
+[HRM]
+
+query I
+SELECT double_metaphone('Kent');
+----
+[KNT]
+
+query I
+SELECT double_metaphone('Flo');
+----
+[FL]
+
+query I
+SELECT double_metaphone('Rivka');
+----
+[RFK]
+
+query I
+SELECT double_metaphone('Marija');
+----
+[MRJ, MRH]
+
+query I
+SELECT double_metaphone('Yury');
+----
+[AR]
+
+query I
+SELECT double_metaphone('Shemaryahu');
+----
+[XMRH]
+
+query I
+SELECT double_metaphone('Yozuca');
+----
+[ASK]
+
+query I
+SELECT double_metaphone('Ciro');
+----
+[SR]
+
+query I
+SELECT double_metaphone('Beji');
+----
+[PJ]
+
+query I
+SELECT double_metaphone('Urby');
+----
+[ARP]
+
+query I
+SELECT double_metaphone('Sophronius');
+----
+[SFRNS]
+
+query I
+SELECT double_metaphone('Abdul-Rahman');
+----
+[APTLRM]
+
+query I
+SELECT double_metaphone('Elpidio');
+----
+[ALPT]
+
+query I
+SELECT double_metaphone('Aldona');
+----
+[ALTN]
+
+query I
+SELECT double_metaphone('Pierre-Jean');
+----
+[PRJN]
+
+query I
+SELECT double_metaphone('Recceswinth');
+----
+[RXSN0, RXSNT]
+
+query I
+SELECT double_metaphone('Ergys');
+----
+[ARJS, ARKS]
+
+query I
+SELECT double_metaphone('Søren');
+----
+[SRN]
+
+query I
+SELECT double_metaphone('Wakanohana');
+----
+[AKNHN, FKNHN]
+
+query I
+SELECT double_metaphone('Wichmann');
+----
+[AXMN, FKMN]
+
+query I
+SELECT double_metaphone('Dragoslav');
+----
+[TRKSLF]
+
+query I
+SELECT double_metaphone('Abele');
+----
+[APL]
+
+query I
+SELECT double_metaphone('Loukas');
+----
+[LKS]
+
+query I
+SELECT double_metaphone('Columbanus');
+----
+[KLMPNS]
+
+query I
+SELECT double_metaphone('Wilbert');
+----
+[ALPRT, FLPRT]
+
+query I
+SELECT double_metaphone('Abiram');
+----
+[APRM]
+
+query I
+SELECT double_metaphone('Tyrone');
+----
+[TRN]
+
+query I
+SELECT double_metaphone('Chivu');
+----
+[XF]
+
+query I
+SELECT double_metaphone('Ludolph');
+----
+[LTLF]
+
+query I
+SELECT double_metaphone('Sumbat');
+----
+[SMPT]
+
+query I
+SELECT double_metaphone('Osborne');
+----
+[ASPRN]
+
+query I
+SELECT double_metaphone('Argishti');
+----
+[ARJXT, ARKXT]
+
+query I
+SELECT double_metaphone('Ran');
+----
+[RN]
+
+query I
+SELECT double_metaphone('Abiyote');
+----
+[APT]
+
+query I
+SELECT double_metaphone('Rallou');
+----
+[RL]
+
+query I
+SELECT double_metaphone('Pjotr');
+----
+[PJTR]
+
+query I
+SELECT double_metaphone('Pero');
+----
+[PR]
+
+query I
+SELECT double_metaphone('Mink');
+----
+[MNK]
+
+query I
+SELECT double_metaphone('Kadashman-Enlil');
+----
+[KTXMNN]
+
+query I
+SELECT double_metaphone('Ernst-Anton');
+----
+[ARNSTN]
+
+query I
+SELECT double_metaphone('Luminita');
+----
+[LMNT]
+
+query I
+SELECT double_metaphone('Frida');
+----
+[FRT]
+
+query I
+SELECT double_metaphone('Josia');
+----
+[JS, AX]
+
+query I
+SELECT double_metaphone('Anstrudis');
+----
+[ANSTRT]
+
+query I
+SELECT double_metaphone('Hevia');
+----
+[HF]
+
+query I
+SELECT double_metaphone('Masahiko');
+----
+[MSHK]
+
+query I
+SELECT double_metaphone('Imad');
+----
+[AMT]
+
+query I
+SELECT double_metaphone('Mordecai');
+----
+[MRTK]
+
+query I
+SELECT double_metaphone('Baudouin');
+----
+[PTN]
+
+query I
+SELECT double_metaphone('Cenwalh');
+----
+[SNL]
+
+query I
+SELECT double_metaphone('Chandralekha');
+----
+[XNTRLK]
+
+query I
+SELECT double_metaphone('Angiolo');
+----
+[ANJL, ANKL]
+
+query I
+SELECT double_metaphone('El-Sayyid');
+----
+[ALST]
+
+query I
+SELECT double_metaphone('Verda');
+----
+[FRT]
+
+query I
+SELECT double_metaphone('Savvas');
+----
+[SFS]
+
+query I
+SELECT double_metaphone('Veerappan');
+----
+[FRPN]
+
+query I
+SELECT double_metaphone('Reagan');
+----
+[RKN]
+
+query I
+SELECT double_metaphone('Yagan');
+----
+[AKN]
+
+query I
+SELECT double_metaphone('Blaž');
+----
+[PL]
+
+query I
+SELECT double_metaphone('Evangelos');
+----
+[AFNJLS, AFNKLS]
+
+query I
+SELECT double_metaphone('Alexandr');
+----
+[ALKSNT]
+
+query I
+SELECT double_metaphone('Gysbert');
+----
+[KSPRT, JSPRT]
+
+query I
+SELECT double_metaphone('Konstantīns');
+----
+[KNSTNT]
+
+query I
+SELECT double_metaphone('Karunesh');
+----
+[KRNX]
+
+query I
+SELECT double_metaphone('Torric');
+----
+[TRK]
+
+query I
+SELECT double_metaphone('Guilherme');
+----
+[KLRM]
+
+query I
+SELECT double_metaphone('Pierfrancesco');
+----
+[PRFRNS]
+
+query I
+SELECT double_metaphone('Cardinal-Infante');
+----
+[KRTNLN]
+
+query I
+SELECT double_metaphone('Fathulla');
+----
+[F0L, FTL]
+
+query I
+SELECT double_metaphone('Helmer');
+----
+[HLMR]
+
+query I
+SELECT double_metaphone('Annelie');
+----
+[ANL]
+
+query I
+SELECT double_metaphone('Jurandir');
+----
+[JRNTR, ARNTR]
+
+query I
+SELECT double_metaphone('Hermogenes');
+----
+[HRMJNS, HRMKNS]
+
+query I
+SELECT double_metaphone('Anselma');
+----
+[ANSLM]
+
+query I
+SELECT double_metaphone('Anthoon');
+----
+[AN0N, ANTN]
+
+query I
+SELECT double_metaphone('Essi');
+----
+[AS]
+
+query I
+SELECT double_metaphone('Crezdon');
+----
+[KRSTN]
+
+query I
+SELECT double_metaphone('Anitha');
+----
+[AN0, ANT]
+
+query I
+SELECT double_metaphone('Anișoara');
+----
+[ANR]
+
+query I
+SELECT double_metaphone('Danila');
+----
+[TNL]
+
+query I
+SELECT double_metaphone('Doriva');
+----
+[TRF]
+
+query I
+SELECT double_metaphone('Anna-Lydia');
+----
+[ANLT]
+
+query I
+SELECT double_metaphone('Cathal');
+----
+[K0L, KTL]
+
+query I
+SELECT double_metaphone('Vere');
+----
+[FR]
+
+query I
+SELECT double_metaphone('Ioan');
+----
+[AN]
+
+query I
+SELECT double_metaphone('Jūlijs');
+----
+[JLS, ALS]
+
+query I
+SELECT double_metaphone('Acilius');
+----
+[ASLS]
+
+query I
+SELECT double_metaphone('Crowfoot');
+----
+[KRFT]
+
+query I
+SELECT double_metaphone('Srebrenko');
+----
+[SRPRNK]
+
+query I
+SELECT double_metaphone('Wogan');
+----
+[AKN, FKN]
+
+query I
+SELECT double_metaphone('Lowry');
+----
+[LR]
+
+query I
+SELECT double_metaphone('Aeropus');
+----
+[ARPS]
+
+query I
+SELECT double_metaphone('The-Dream');
+----
+[0TRM, TTRM]
+
+query I
+SELECT double_metaphone('Adax');
+----
+[ATKS]
+
+query I
+SELECT double_metaphone('Onufri');
+----
+[ANFR]
+
+query I
+SELECT double_metaphone('Arame');
+----
+[ARM]
+
+query I
+SELECT double_metaphone('Đorđije');
+----
+[RJ]
+
+query I
+SELECT double_metaphone('Doan');
+----
+[TN]
+
+query I
+SELECT double_metaphone('Đura');
+----
+[R]
+
+query I
+SELECT double_metaphone('Đurađ');
+----
+[R]
+
+query I
+SELECT double_metaphone('Van');
+----
+[FN]
+
+query I
+SELECT double_metaphone('Fusae');
+----
+[FS]
+
+query I
+SELECT double_metaphone('Aden');
+----
+[ATN]
+
+query I
+SELECT double_metaphone('Somerset');
+----
+[SMRST]
+
+query I
+SELECT double_metaphone('Coen');
+----
+[KN]
+
+query I
+SELECT double_metaphone('Cingonius');
+----
+[SNKNS]
+
+query I
+SELECT double_metaphone('Édison');
+----
+[TSN]
+
+query I
+SELECT double_metaphone('Taksony');
+----
+[TKSN]
+
+query I
+SELECT double_metaphone('Arzu');
+----
+[ARS]
+
+query I
+SELECT double_metaphone('Pierce');
+----
+[PRS]
+
+query I
+SELECT double_metaphone('Karl-Maria');
+----
+[KRLMR]
+
+query I
+SELECT double_metaphone('Ratko');
+----
+[RTK]
+
+query I
+SELECT double_metaphone('Tany');
+----
+[TN]
+
+query I
+SELECT double_metaphone('İris');
+----
+[RS]
+
+query I
+SELECT double_metaphone('Atika');
+----
+[ATK]
+
+query I
+SELECT double_metaphone('Rola');
+----
+[RL]
+
+query I
+SELECT double_metaphone('Baháʼu''lláh');
+----
+[PL]
+
+query I
+SELECT double_metaphone('Zascha');
+----
+[SX]
+
+query I
+SELECT double_metaphone('Gallienus');
+----
+[KLNS]
+
+query I
+SELECT double_metaphone('Wendie');
+----
+[ANT, FNT]
+
+query I
+SELECT double_metaphone('Takigawa');
+----
+[TKK]
+
+query I
+SELECT double_metaphone('Sahit');
+----
+[SHT]
+
+query I
+SELECT double_metaphone('Valeriu');
+----
+[FLR]
+
+query I
+SELECT double_metaphone('Giampietrino');
+----
+[JMPTRN, KMPTRN]
+
+query I
+SELECT double_metaphone('Vule');
+----
+[FL]
+
+query I
+SELECT double_metaphone('Marijan');
+----
+[MRJN, MRHN]
+
+query I
+SELECT double_metaphone('Aldis');
+----
+[ALTS]
+
+query I
+SELECT double_metaphone('Zaban');
+----
+[SPN]
+
+query I
+SELECT double_metaphone('Fagner');
+----
+[FNR, FKNR]
+
+query I
+SELECT double_metaphone('Bridgitte');
+----
+[PRJT]
+
+query I
+SELECT double_metaphone('Ferran');
+----
+[FRN]
+
+query I
+SELECT double_metaphone('Tamiris');
+----
+[TMRS]
+
+query I
+SELECT double_metaphone('Vicenç');
+----
+[FSNS]
+
+query I
+SELECT double_metaphone('Metin');
+----
+[MTN]
+
+query I
+SELECT double_metaphone('Gerhardus');
+----
+[KRRTS, JRRTS]
+
+query I
+SELECT double_metaphone('Haider');
+----
+[HTR]
+
+query I
+SELECT double_metaphone('Ozaki');
+----
+[ASK, ATSK]
+
+query I
+SELECT double_metaphone('Valérie');
+----
+[FLR]
+
+query I
+SELECT double_metaphone('Juanele');
+----
+[JNL, ANL]
+
+query I
+SELECT double_metaphone('Polyeuctus');
+----
+[PLKTS]
+
+query I
+SELECT double_metaphone('Marlin');
+----
+[MRLN]
+
+query I
+SELECT double_metaphone('Edgardo');
+----
+[ATKRT]
+
+query I
+SELECT double_metaphone('Syd');
+----
+[ST]
+
+query I
+SELECT double_metaphone('Macka');
+----
+[MK]
+
+query I
+SELECT double_metaphone('Freida');
+----
+[FRT]
+
+query I
+SELECT double_metaphone('Corderius');
+----
+[KRTRS]
+
+query I
+SELECT double_metaphone('Paulie');
+----
+[PL]
+
+query I
+SELECT double_metaphone('Marullus');
+----
+[MRLS]
+
+query I
+SELECT double_metaphone('Fredegar');
+----
+[FRTKR]
+
+query I
+SELECT double_metaphone('Geoffroy');
+----
+[JFR, KFR]
+
+query I
+SELECT double_metaphone('Chremonides');
+----
+[KRMNTS]
+
+query I
+SELECT double_metaphone('Gerrard');
+----
+[KRRT, JRRT]
+
+query I
+SELECT double_metaphone('Spark');
+----
+[SPRK]
+
+query I
+SELECT double_metaphone('Algo');
+----
+[ALK]
+
+query I
+SELECT double_metaphone('Gerlinde');
+----
+[KRLNT, JRLNT]
+
+query I
+SELECT double_metaphone('Majid');
+----
+[MJT]
+
+query I
+SELECT double_metaphone('Heissler');
+----
+[HSLR]
+
+query I
+SELECT double_metaphone('Arshak');
+----
+[ARXK]
+
+query I
+SELECT double_metaphone('Aioulf');
+----
+[ALF]
+
+query I
+SELECT double_metaphone('Masta');
+----
+[MST]
+
+query I
+SELECT double_metaphone('Cheerleader');
+----
+[XRLTR]
+
+query I
+SELECT double_metaphone('Tashi');
+----
+[TX]
+
+query I
+SELECT double_metaphone('Jone');
+----
+[JN, AN]
+
+query I
+SELECT double_metaphone('Aruna');
+----
+[ARN]
+
+query I
+SELECT double_metaphone('Seweryn');
+----
+[SRN]
+
+query I
+SELECT double_metaphone('Imperial');
+----
+[AMPRL]
+
+query I
+SELECT double_metaphone('Krishan');
+----
+[KRXN]
+
+query I
+SELECT double_metaphone('Anthony');
+----
+[AN0N, ANTN]
+
+query I
+SELECT double_metaphone('Jarle');
+----
+[JRL, ARL]
+
+query I
+SELECT double_metaphone('Anneken');
+----
+[ANKN]
+
+query I
+SELECT double_metaphone('Nannie');
+----
+[NN]
+
+query I
+SELECT double_metaphone('Takao');
+----
+[TK]
+
+query I
+SELECT double_metaphone('Dilip');
+----
+[TLP]
+
+query I
+SELECT double_metaphone('Elio');
+----
+[AL]
+
+query I
+SELECT double_metaphone('Gara');
+----
+[KR]
+
+query I
+SELECT double_metaphone('Ezequiel');
+----
+[ASKL]
+
+query I
+SELECT double_metaphone('Fareed');
+----
+[FRT]
+
+query I
+SELECT double_metaphone('Cunnie');
+----
+[KN]
+
+query I
+SELECT double_metaphone('Anthonius');
+----
+[AN0NS, ANTNS]
+
+query I
+SELECT double_metaphone('Bele');
+----
+[PL]
+
+query I
+SELECT double_metaphone('Fin');
+----
+[FN]
+
+query I
+SELECT double_metaphone('Palaephatus');
+----
+[PLFTS]
+
+query I
+SELECT double_metaphone('Antoine-Alexis');
+----
+[ANTNLK]
+
+query I
+SELECT double_metaphone('Fortún');
+----
+[FRTN]
+
+query I
+SELECT double_metaphone('Rémy');
+----
+[RM]
+
+query I
+SELECT double_metaphone('Karrar');
+----
+[KRR]
+
+query I
+SELECT double_metaphone('Fabricio');
+----
+[FPRS, FPRX]
+
+query I
+SELECT double_metaphone('Da');
+----
+[T]
+
+query I
+SELECT double_metaphone('Clotilde');
+----
+[KLTLT]
+
+query I
+SELECT double_metaphone('Léna');
+----
+[LN]
+
+query I
+SELECT double_metaphone('Kjersti');
+----
+[KRST]
+
+query I
+SELECT double_metaphone('Josie');
+----
+[JS, AS]
+
+query I
+SELECT double_metaphone('Majandra');
+----
+[MJNTR, MHNTR]
+
+query I
+SELECT double_metaphone('Stanislas');
+----
+[STNLS]
+
+query I
+SELECT double_metaphone('Śuddhodana');
+----
+[TTN]
+
+query I
+SELECT double_metaphone('Mélanie');
+----
+[MLN]
+
+query I
+SELECT double_metaphone('Millvina');
+----
+[MLFN]
+
+query I
+SELECT double_metaphone('Mamie');
+----
+[MM]
+
+query I
+SELECT double_metaphone('Riyo');
+----
+[R]
+
+query I
+SELECT double_metaphone('Evald');
+----
+[AFLT]
+
+query I
+SELECT double_metaphone('Zéphyrin');
+----
+[SFRN]
+
+query I
+SELECT double_metaphone('Æthelthryth');
+----
+[0L0R0, TLTRT]
+
+query I
+SELECT double_metaphone('Zosima');
+----
+[SSM]
+
+query I
+SELECT double_metaphone('Zotto');
+----
+[ST]
+
+query I
+SELECT double_metaphone('Gauge');
+----
+[KJ, KK]
+
+query I
+SELECT double_metaphone('Hecataeus');
+----
+[HKTS]
+
+query I
+SELECT double_metaphone('Nâdiya');
+----
+[NT]
+
+query I
+SELECT double_metaphone('Coco');
+----
+[KK]
+
+query I
+SELECT double_metaphone('Nobuaki');
+----
+[NPK]
+
+query I
+SELECT double_metaphone('Shenae');
+----
+[XN]
+
+query I
+SELECT double_metaphone('Celeste');
+----
+[SLST]
+
+query I
+SELECT double_metaphone('Julianne');
+----
+[JLN, ALN]
+
+query I
+SELECT double_metaphone('Isaiah');
+----
+[AS]
+
+query I
+SELECT double_metaphone('Uyunqimg');
+----
+[ANKMK]
+
+query I
+SELECT double_metaphone('Mija');
+----
+[MJ, MH]
+
+query I
+SELECT double_metaphone('Demyan');
+----
+[TMN]
+
+query I
+SELECT double_metaphone('Ascensión');
+----
+[ASNSN]
+
+query I
+SELECT double_metaphone('Yulyana');
+----
+[ALN]
+
+query I
+SELECT double_metaphone('Gorica');
+----
+[KRK]
+
+query I
+SELECT double_metaphone('Ludivine');
+----
+[LTFN]
+
+query I
+SELECT double_metaphone('Na');
+----
+[N]
+
+query I
+SELECT double_metaphone('Teairra');
+----
+[TR]
+
+query I
+SELECT double_metaphone('Wenderson');
+----
+[ANTRSN, FNTRSN]
+
+query I
+SELECT double_metaphone('Hannie');
+----
+[HN]
+
+query I
+SELECT double_metaphone('Wyndham');
+----
+[ANTM, FNTM]
+
+query I
+SELECT double_metaphone('Alvent');
+----
+[ALFNT]
+
+query I
+SELECT double_metaphone('Hàm');
+----
+[M]
+
+query I
+SELECT double_metaphone('Guinevere');
+----
+[KNFR]
+
+query I
+SELECT double_metaphone('Servílio');
+----
+[SRFL]
+
+query I
+SELECT double_metaphone('Kenya');
+----
+[KN]
+
+query I
+SELECT double_metaphone('Rasa');
+----
+[RS]
+
+query I
+SELECT double_metaphone('Pam');
+----
+[PM]
+
+query I
+SELECT double_metaphone('Scotty');
+----
+[SKT]
+
+query I
+SELECT double_metaphone('Ammistamrou');
+----
+[AMSTMR]
+
+query I
+SELECT double_metaphone('Dodi');
+----
+[TT]
+
+query I
+SELECT double_metaphone('Manco');
+----
+[MNK]
+
+query I
+SELECT double_metaphone('Heðin');
+----
+[HN]
+
+query I
+SELECT double_metaphone('Þorbjörn');
+----
+[RPJRN]
+
+query I
+SELECT double_metaphone('Beeban');
+----
+[PPN]
+
+query I
+SELECT double_metaphone('Noa');
+----
+[N]
+
+query I
+SELECT double_metaphone('Achmed');
+----
+[AKMT]
+
+query I
+SELECT double_metaphone('Akhrik');
+----
+[AKRK]
+
+query I
+SELECT double_metaphone('Harrie');
+----
+[HR]
+
+query I
+SELECT double_metaphone('Nuala');
+----
+[NL]
+
+query I
+SELECT double_metaphone('Marie-Louise');
+----
+[MRLS]
+
+query I
+SELECT double_metaphone('Garsevan');
+----
+[KRSFN]
+
+query I
+SELECT double_metaphone('Ning');
+----
+[NNK]
+
+query I
+SELECT double_metaphone('Elnur');
+----
+[ALNR]
+
+query I
+SELECT double_metaphone('Konishiki');
+----
+[KNXK]
+
+query I
+SELECT double_metaphone('Shammi');
+----
+[XM]
+
+query I
+SELECT double_metaphone('Pramathesh');
+----
+[PRM0X, PRMTX]
+
+query I
+SELECT double_metaphone('Servet');
+----
+[SRFT]
+
+query I
+SELECT double_metaphone('Margaritis');
+----
+[MRKRTS]
+
+query I
+SELECT double_metaphone('Ada');
+----
+[AT]
+
+query I
+SELECT double_metaphone('Sönke');
+----
+[SNK]
+
+query I
+SELECT double_metaphone('Carsta');
+----
+[KRST]
+
+query I
+SELECT double_metaphone('Pepo');
+----
+[PP]
+
+query I
+SELECT double_metaphone('Shuhrat');
+----
+[XRT]
+
+query I
+SELECT double_metaphone('Jesualdo');
+----
+[JSLT, ASLT]
+
+query I
+SELECT double_metaphone('Jędrzej');
+----
+[JTRSJ, 'ATRS ']
+
+query I
+SELECT double_metaphone('Shafik');
+----
+[XFK]
+
+query I
+SELECT double_metaphone('Bonaventure');
+----
+[PNFNTR]
+
+query I
+SELECT double_metaphone('Nectarios');
+----
+[NKTRS]
+
+query I
+SELECT double_metaphone('Zsófia');
+----
+[SSF]
+
+query I
+SELECT double_metaphone('Bhatta');
+----
+[PT]
+
+query I
+SELECT double_metaphone('Swithred');
+----
+[S0RT, XTRT]
+
+query I
+SELECT double_metaphone('Cezary');
+----
+[SSR]
+
+query I
+SELECT double_metaphone('Mangué');
+----
+[MNK]
+
+query I
+SELECT double_metaphone('Severus');
+----
+[SFRS]
+
+query I
+SELECT double_metaphone('Luc-Julien-Joseph');
+----
+[LKJLNJ, LKJLNH]
+
+query I
+SELECT double_metaphone('Docimus');
+----
+[TSMS]
+
+query I
+SELECT double_metaphone('Toralf');
+----
+[TRLF]
+
+query I
+SELECT double_metaphone('Ugolino');
+----
+[AKLN]
+
+query I
+SELECT double_metaphone('Kalilou');
+----
+[KLL]
+
+query I
+SELECT double_metaphone('Lencie');
+----
+[LNS, LNX]
+
+query I
+SELECT double_metaphone('Ata');
+----
+[AT]
+
+query I
+SELECT double_metaphone('Joseph-Marie');
+----
+[JSFMR, HSFMR]
+
+query I
+SELECT double_metaphone('Kazuyuki');
+----
+[KSK, KTSK]
+
+query I
+SELECT double_metaphone('Nazi-Maruttash');
+----
+[NSMRTX]
+
+query I
+SELECT double_metaphone('Barnabas');
+----
+[PRNPS]
+
+query I
+SELECT double_metaphone('Eoban');
+----
+[APN]
+
+query I
+SELECT double_metaphone('Fanizani');
+----
+[FNSN]
+
+query I
+SELECT double_metaphone('Antonij');
+----
+[ANTNJ, 'ANTN ']
+
+query I
+SELECT double_metaphone('Ruqayyah');
+----
+[RK]
+
+query I
+SELECT double_metaphone('Brenden');
+----
+[PRNTN]
+
+query I
+SELECT double_metaphone('Kreskin');
+----
+[KRSKN]
+
+query I
+SELECT double_metaphone('Urzhin');
+----
+[ARJN]
+
+query I
+SELECT double_metaphone('Quintin');
+----
+[KNTN]
+
+query I
+SELECT double_metaphone('Itakayt');
+----
+[ATKT]
+
+query I
+SELECT double_metaphone('Þorleifur');
+----
+[RLFR]
+
+query I
+SELECT double_metaphone('Rosette');
+----
+[RST]
+
+query I
+SELECT double_metaphone('Chone');
+----
+[XN]
+
+query I
+SELECT double_metaphone('Kobi');
+----
+[KP]
+
+query I
+SELECT double_metaphone('Erastus');
+----
+[ARSTS]
+
+query I
+SELECT double_metaphone('Wenceslas');
+----
+[ANSSLS, FNSSLS]
+
+query I
+SELECT double_metaphone('Antonina');
+----
+[ANTNN]
+
+query I
+SELECT double_metaphone('Victor-Lévy');
+----
+[FKTRLF]
+
+query I
+SELECT double_metaphone('Roulland');
+----
+[RLNT]
+
+query I
+SELECT double_metaphone('Tego');
+----
+[TK]
+
+query I
+SELECT double_metaphone('Callinicus');
+----
+[KLNKS]
+
+query I
+SELECT double_metaphone('Odiseo');
+----
+[ATS]
+
+query I
+SELECT double_metaphone('Emmanuil');
+----
+[AMNL]
+
+query I
+SELECT double_metaphone('Yohannes');
+----
+[AHNS]
+
+query I
+SELECT double_metaphone('Dez');
+----
+[TS]
+
+query I
+SELECT double_metaphone('Órækja');
+----
+[RK]
+
+query I
+SELECT double_metaphone('JR');
+----
+[JR, AR]
+
+query I
+SELECT double_metaphone('Julija');
+----
+[JLJ, ALH]
+
+query I
+SELECT double_metaphone('Kukovaitis');
+----
+[KKFTS]
+
+query I
+SELECT double_metaphone('Siska');
+----
+[SSK]
+
+query I
+SELECT double_metaphone('Cælin');
+----
+[KLN]
+
+query I
+SELECT double_metaphone('Zuzu');
+----
+[SS]
+
+query I
+SELECT double_metaphone('AnnaLynne');
+----
+[ANLN]
+
+query I
+SELECT double_metaphone('Emre');
+----
+[AMR]
+
+query I
+SELECT double_metaphone('LUIS');
+----
+[LS]
+
+query I
+SELECT double_metaphone('Anoushka');
+----
+[ANXK]
+
+query I
+SELECT double_metaphone('ORLAN');
+----
+[ARLN]
+
+query I
+SELECT double_metaphone('Noémie');
+----
+[NM]
+
+query I
+SELECT double_metaphone('Haylie');
+----
+[HL]
+
+query I
+SELECT double_metaphone('Vivica');
+----
+[FFK]
+
+query I
+SELECT double_metaphone('Yazid');
+----
+[AST]
+
+query I
+SELECT double_metaphone('Toussaint');
+----
+[TSNT]
+
+query I
+SELECT double_metaphone('Zitral');
+----
+[STRL]
+
+query I
+SELECT double_metaphone('Atom');
+----
+[ATM]
+
+query I
+SELECT double_metaphone('Venus');
+----
+[FNS]
+
+query I
+SELECT double_metaphone('Asima');
+----
+[ASM]
+
+query I
+SELECT double_metaphone('Aristonous');
+----
+[ARSTNS]
+
+query I
+SELECT double_metaphone('Athīr');
+----
+[A0R, ATR]
+
+query I
+SELECT double_metaphone('Wopke');
+----
+[APK, FPK]
+
+query I
+SELECT double_metaphone('Arnim');
+----
+[ARNM]
+
+query I
+SELECT double_metaphone('Alix');
+----
+[ALKS]
+
+query I
+SELECT double_metaphone('Hound');
+----
+[HNT]
+
+query I
+SELECT double_metaphone('Stanislaus');
+----
+[STNLS]
+
+query I
+SELECT double_metaphone('Sosibius');
+----
+[SSPS]
+
+query I
+SELECT double_metaphone('Saturnina');
+----
+[STRNN]
+
+query I
+SELECT double_metaphone('Kulbhushan');
+----
+[KLPXN]
+
+query I
+SELECT double_metaphone('Huw');
+----
+[H, HF]
+
+query I
+SELECT double_metaphone('Kung');
+----
+[KNK]
+
+query I
+SELECT double_metaphone('Bartholomaeus');
+----
+[PR0LMS, PRTLMS]
+
+query I
+SELECT double_metaphone('Jinzaburō');
+----
+[JNSPR, ANSPR]
+
+query I
+SELECT double_metaphone('Mei');
+----
+[M]
+
+query I
+SELECT double_metaphone('Sukechika');
+----
+[SKXK, SKKK]
+
+query I
+SELECT double_metaphone('Yékini');
+----
+[AKN]
+
+query I
+SELECT double_metaphone('Sisa');
+----
+[SS]
+
+query I
+SELECT double_metaphone('Oualid');
+----
+[ALT]
+
+query I
+SELECT double_metaphone('Froumund');
+----
+[FRMNT]
+
+query I
+SELECT double_metaphone('Wan');
+----
+[AN, FN]
+
+query I
+SELECT double_metaphone('Drissa');
+----
+[TRS]
+
+query I
+SELECT double_metaphone('Guillem');
+----
+[KLM]
+
+query I
+SELECT double_metaphone('Dumas');
+----
+[TMS]
+
+query I
+SELECT double_metaphone('François-Vincent');
+----
+[FRNSSF]
+
+query I
+SELECT double_metaphone('Yoichi');
+----
+[AX, AK]
+
+query I
+SELECT double_metaphone('Koh');
+----
+[K]
+
+query I
+SELECT double_metaphone('Arnór');
+----
+[ARNR]
+
+query I
+SELECT double_metaphone('Witness');
+----
+[ATNS, FTNS]
+
+query I
+SELECT double_metaphone('Arta');
+----
+[ART]
+
+query I
+SELECT double_metaphone('Artemas');
+----
+[ARTMS]
+
+query I
+SELECT double_metaphone('Charles-Louis');
+----
+[XRLSLS]
+
+query I
+SELECT double_metaphone('Sriranga');
+----
+[SRRNK]
+
+query I
+SELECT double_metaphone('Hans-Hasso');
+----
+[HNSS]
+
+query I
+SELECT double_metaphone('Lara-Isabelle');
+----
+[LRSPL]
+
+query I
+SELECT double_metaphone('Uve');
+----
+[AF]
+
+query I
+SELECT double_metaphone('River');
+----
+[RFR]
+
+query I
+SELECT double_metaphone('Korl');
+----
+[KRL]
+
+query I
+SELECT double_metaphone('Walter-Herwig');
+----
+[ALTRRK, FLTRRK]
+
+query I
+SELECT double_metaphone('Lubina');
+----
+[LPN]
+
+query I
+SELECT double_metaphone('Naima');
+----
+[NM]
+
+query I
+SELECT double_metaphone('Kareen');
+----
+[KRN]
+
+query I
+SELECT double_metaphone('Ingbert');
+----
+[ANKPRT]
+
+query I
+SELECT double_metaphone('Eucharius');
+----
+[AXRS, AKRS]
+
+query I
+SELECT double_metaphone('Sinai');
+----
+[SN]
+
+query I
+SELECT double_metaphone('Yōji');
+----
+[AJ]
+
+query I
+SELECT double_metaphone('Ladislao');
+----
+[LTL]
+
+query I
+SELECT double_metaphone('Nubkhesbed');
+----
+[NPKSPT]
+
+query I
+SELECT double_metaphone('Hendryk');
+----
+[HNTRK]
+
+query I
+SELECT double_metaphone('Baykal');
+----
+[PKL]
+
+query I
+SELECT double_metaphone('Albín');
+----
+[ALPN]
+
+query I
+SELECT double_metaphone('Fathi');
+----
+[F0, FT]
+
+query I
+SELECT double_metaphone('Louis-Olivier');
+----
+[LSLF, LSLFR]
+
+query I
+SELECT double_metaphone('Haralambie');
+----
+[HRLMP]
+
+query I
+SELECT double_metaphone('Wai');
+----
+[A, F]
+
+query I
+SELECT double_metaphone('Arūnas');
+----
+[ARNS]
+
+query I
+SELECT double_metaphone('JJ');
+----
+[J, A]
+
+query I
+SELECT double_metaphone('Eglantina');
+----
+[AKLNTN]
+
+query I
+SELECT double_metaphone('Bodo-Eckehard');
+----
+[PTKHRT]
+
+query I
+SELECT double_metaphone('Djehuti');
+----
+[TJHT]
+
+query I
+SELECT double_metaphone('Tadayuki');
+----
+[TTK]
+
+query I
+SELECT double_metaphone('Imru');
+----
+[AMR]
+
+query I
+SELECT double_metaphone('Busdriver');
+----
+[PSTRFR]
+
+query I
+SELECT double_metaphone('Pierre-Paul');
+----
+[PRPL]
+
+query I
+SELECT double_metaphone('Hieromonk');
+----
+[HRMNK]
+
+query I
+SELECT double_metaphone('Carl-Henry');
+----
+[KRLNR]
+
+query I
+SELECT double_metaphone('Gianandrea');
+----
+[JNNTR, KNNTR]
+
+query I
+SELECT double_metaphone('Hamoud');
+----
+[HMT]
+
+query I
+SELECT double_metaphone('Alexandre-François');
+----
+[ALKSNT]
+
+query I
+SELECT double_metaphone('Sukhdev');
+----
+[SKTF]
+
+query I
+SELECT double_metaphone('Pontius');
+----
+[PNTS]
+
+query I
+SELECT double_metaphone('Yiğit');
+----
+[AT]
+
+query I
+SELECT double_metaphone('Tiribazus');
+----
+[TRPSS]
+
+query I
+SELECT double_metaphone('Isidre');
+----
+[ASTR]
+
+query I
+SELECT double_metaphone('Odion');
+----
+[ATN]
+
+query I
+SELECT double_metaphone('Rickard');
+----
+[RKRT]
+
+query I
+SELECT double_metaphone('Igorʹ');
+----
+[AKR]
+
+query I
+SELECT double_metaphone('Larrys');
+----
+[LRS]
+
+query I
+SELECT double_metaphone('Olo');
+----
+[AL]
+
+query I
+SELECT double_metaphone('Kullervo');
+----
+[KLRF]
+
+query I
+SELECT double_metaphone('Fikret');
+----
+[FKRT]
+
+query I
+SELECT double_metaphone('Ulu');
+----
+[AL]
+
+query I
+SELECT double_metaphone('Guillaume-François');
+----
+[KLMFRN]
+
+query I
+SELECT double_metaphone('Vagn');
+----
+[FN, FKN]
+
+query I
+SELECT double_metaphone('Rafer');
+----
+[RFR]
+
+query I
+SELECT double_metaphone('Maccio');
+----
+[MX]
+
+query I
+SELECT double_metaphone('Paulius');
+----
+[PLS]
+
+query I
+SELECT double_metaphone('Ysaora');
+----
+[ASR]
+
+query I
+SELECT double_metaphone('Edison');
+----
+[ATSN]
+
+query I
+SELECT double_metaphone('Sambor');
+----
+[SMPR]
+
+query I
+SELECT double_metaphone('Amphis');
+----
+[AMFS]
+
+query I
+SELECT double_metaphone('Avdija');
+----
+[AFTJ, AFTH]
+
+query I
+SELECT double_metaphone('Arjen');
+----
+[ARJN]
+
+query I
+SELECT double_metaphone('Elmira');
+----
+[ALMR]
+
+query I
+SELECT double_metaphone('Siddharth');
+----
+[STR0, STRT]
+
+query I
+SELECT double_metaphone('Arnulf');
+----
+[ARNLF]
+
+query I
+SELECT double_metaphone('Charles-Marie-Esprit');
+----
+[XRLSMR]
+
+query I
+SELECT double_metaphone('Sanchai');
+----
+[SNX, SNK]
+
+query I
+SELECT double_metaphone('Aref');
+----
+[ARF]
+
+query I
+SELECT double_metaphone('Jordy');
+----
+[JRT, ART]
+
+query I
+SELECT double_metaphone('Dajuan');
+----
+[TJN]
+
+query I
+SELECT double_metaphone('Przemyslaus');
+----
+[PRSMLS]
+
+query I
+SELECT double_metaphone('Somália');
+----
+[SML]
+
+query I
+SELECT double_metaphone('Arcesilaus');
+----
+[ARSSLS]
+
+query I
+SELECT double_metaphone('Armands');
+----
+[ARMNTS]
+
+query I
+SELECT double_metaphone('Asnoldo');
+----
+[ASNLT]
+
+query I
+SELECT double_metaphone('Ugeo');
+----
+[AJ, AK]
+
+query I
+SELECT double_metaphone('Riddick');
+----
+[RTK]
+
+query I
+SELECT double_metaphone('Milford');
+----
+[MLFRT]
+
+query I
+SELECT double_metaphone('Regimantas');
+----
+[RJMNTS, RKMNTS]
+
+query I
+SELECT double_metaphone('Seema');
+----
+[SM]
+
+query I
+SELECT double_metaphone('Hacken');
+----
+[HKN]
+
+query I
+SELECT double_metaphone('Fatoumata');
+----
+[FTMT]
+
+query I
+SELECT double_metaphone('Malick');
+----
+[MLK]
+
+query I
+SELECT double_metaphone('Rémo');
+----
+[RM]
+
+query I
+SELECT double_metaphone('Kido');
+----
+[KT]
+
+query I
+SELECT double_metaphone('Bunzō');
+----
+[PNS]
+
+query I
+SELECT double_metaphone('Uki');
+----
+[AK]
+
+query I
+SELECT double_metaphone('Ademir');
+----
+[ATMR]
+
+query I
+SELECT double_metaphone('Adalram');
+----
+[ATLRM]
+
+query I
+SELECT double_metaphone('Tadd');
+----
+[TT]
+
+query I
+SELECT double_metaphone('Błażej');
+----
+[PJ, 'P ']
+
+query I
+SELECT double_metaphone('Salou');
+----
+[SL]
+
+query I
+SELECT double_metaphone('Hayim');
+----
+[HM]
+
+query I
+SELECT double_metaphone('Gundobad');
+----
+[KNTPT]
+
+query I
+SELECT double_metaphone('Adad-shuma-usur');
+----
+[ATTXMS]
+
+query I
+SELECT double_metaphone('Clarisse');
+----
+[KLRS]
+
+query I
+SELECT double_metaphone('Irja');
+----
+[ARJ]
+
+query I
+SELECT double_metaphone('Dafna');
+----
+[TFN]
+
+query I
+SELECT double_metaphone('Maceo');
+----
+[MS]
+
+query I
+SELECT double_metaphone('Searles');
+----
+[SRLS]
+
+query I
+SELECT double_metaphone('Amanibakhi');
+----
+[AMNPK]
+
+query I
+SELECT double_metaphone('Freydís');
+----
+[FRTS]
+
+query I
+SELECT double_metaphone('Philothei');
+----
+[FL0, FLT]
+
