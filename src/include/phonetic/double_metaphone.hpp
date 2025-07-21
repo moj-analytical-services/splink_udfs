@@ -246,10 +246,36 @@ private:
 	static std::string CleanInput(const std::string &input) {
 		std::string out;
 		out.reserve(input.size());
-		for (char ch : input) {
-			if (!std::isspace(static_cast<unsigned char>(ch))) {
-				out.push_back(static_cast<char>(std::toupper(static_cast<unsigned char>(ch))));
+
+		for (std::size_t i = 0; i < input.size();) {
+			unsigned char b1 = static_cast<unsigned char>(input[i]);
+
+			// --- UTF-8 special cases -------------------------------------------
+			//  ç  →  0xC3 0xA7   (lower-case)
+			//  Ç  →  0xC3 0x87   (upper-case)
+			if (b1 == 0xC3 && i + 1 < input.size()) {
+				unsigned char b2 = static_cast<unsigned char>(input[i + 1]);
+
+				// Cedilla maps to the Java branch that appends 'S'
+				if (b2 == 0xA7 || b2 == 0x87) { // ç or Ç
+					out.push_back('S');
+					i += 2;
+					continue;
+				}
+
+				// Tilde-N maps to the Java branch that appends 'N'
+				if (b2 == 0xB1 || b2 == 0x91) { // ñ or Ñ
+					out.push_back('N');
+					i += 2;
+					continue;
+				}
 			}
+
+			// -------------------------------------------------------------------
+			if (!std::isspace(b1)) {
+				out.push_back(static_cast<char>(std::toupper(b1)));
+			}
+			++i;
 		}
 		return out;
 	}
