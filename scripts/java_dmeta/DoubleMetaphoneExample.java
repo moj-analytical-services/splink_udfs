@@ -28,28 +28,51 @@ public class DoubleMetaphoneExample {
         DoubleMetaphone dm = new DoubleMetaphone();
         dm.setMaxCodeLen(6);
 
-        // 4) Prepare output file
-        Path outPath = Paths.get("dmetaphone.test");
-        try (var writer = Files.newBufferedWriter(outPath)) {
-            int idx = 1;
+        // 4) Prepare output files: .test and .csv
+        Path testPath = Paths.get("dmetaphone.test");
+        Path csvPath = Paths.get("dmetaphone.csv");
+        try (var testWriter = Files.newBufferedWriter(testPath);
+             var csvWriter = Files.newBufferedWriter(csvPath)) {
+
+            // Write CSV header
+            csvWriter.write("input,expected");
+            csvWriter.newLine();
+
             for (String name : names) {
                 String primary   = dm.doubleMetaphone(name);
                 String alternate = dm.doubleMetaphone(name, true);
 
                 // Build array-like representation
-                String arrayOutput = (!alternate.isEmpty() && !alternate.equals(primary))
-                        ? String.format("[%s, %s]", primary, alternate)
-                        : String.format("[%s]", primary);
+            String p = primary.contains(" ")
+                ? String.format("'%s'", primary)
+                : primary;
+            String arrayOutput;
+            if (!alternate.isEmpty() && !alternate.equals(primary)) {
+                String a = alternate.contains(" ")
+                    ? String.format("'%s'", alternate)
+                    : alternate;
+                arrayOutput = String.format("[%s, %s]", p, a);
+            } else {
+                arrayOutput = String.format("[%s]", p);
+            }
 
-                // Write block
-                writer.write(String.format("query I%n", idx++));
-                writer.write(String.format("SELECT double_metaphone('%s');%n", name));
-                writer.write("----\n");
-                writer.write(arrayOutput);
-                writer.write("\n\n");  // blank line
+                // Write to .test file
+                testWriter.write("query I");
+                testWriter.newLine();
+                testWriter.write(String.format("SELECT double_metaphone('%s');%n", name));
+                testWriter.write("----");
+                testWriter.newLine();
+                testWriter.write(arrayOutput);
+                testWriter.newLine();
+                testWriter.newLine();
+
+                // Write to CSV: wrap expected in quotes
+                csvWriter.write(String.format("%s,\"%s\"", name, arrayOutput));
+                csvWriter.newLine();
             }
         }
 
-        System.out.println("Done! Wrote " + names.size() + " entries to " + outPath.toAbsolutePath());
+        System.out.println("Done! Wrote " + names.size() + " entries to " + testPath.toAbsolutePath());
+        System.out.println("CSV written to " + csvPath.toAbsolutePath());
     }
 }
