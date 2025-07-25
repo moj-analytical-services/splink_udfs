@@ -9,3 +9,10 @@ Portions of this repository (double_metaphone.hpp) are
 a line-for-line C++ translation of
 org.apache.commons.codec.language.DoubleMetaphone,
 originally distributed under the Apache License, Version 2.0.
+
+--------------------------------------------------------------------
+This library wraps some functions from
+rapidfuzz‑cpp
+Copyright (c) 2020–2025 Max Bachmann and contributors
+Licensed under the MIT License (see LICENSE-RAPIDFUZZ)
+--------------------------------------------------------------------

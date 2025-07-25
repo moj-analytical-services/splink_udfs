@@ -1,3 +1,6 @@
+// This file links against RapidFuzz‑CPP (MIT, © 2020–2025 Max Bachmann et al.)
+// See LICENSE-RAPIDFUZZ for the full licence text.
+
 #pragma once
 
 #include <rapidfuzz/distance/Levenshtein.hpp>

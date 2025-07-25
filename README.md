@@ -1,7 +1,8 @@
 # Splink UDFs Extension for DuckDB
 
-The `splink_udfs` extension is work in progress. It aims to offer a variety of function**Exception:**
-The Double Metaphone implementation in `src/include/phonetic/double_metaphone.hpp` is a literal C++ translation of `org.apache.commons.codec.language.DoubleMetaphone` and is therefore licensed separately under the [Apache License 2.0](LICENSE_APACHE). See the top of the header file for the full Apache license notice, and the project's `NOTICE` file for attribution details.that are useful for the purpose of data linkage, including support for the [Soundex](https://en.wikipedia.org/wiki/Soundex) algorithm, [Double Metaphone](https://en.wikipedia.org/wiki/Metaphone#Double_Metaphone) phonetic encoding, diacritic stripping, and text transliteration. This allows similarity matching of names and other words based on how they sound, rather than how they are spelled.
+The `splink_udfs` extension is work in progress. It aims to offer a variety of function
+
+
 
 This repo is based on the [DuckDB Extension Template](https://github.com/duckdb/extension-template)
 ## Installation
@@ -48,6 +49,26 @@ The function returns a list containing:
 
 This allows for more flexible matching - you can check if any code from one word matches any code from another word.
 
+### `levenshtein(VARCHAR, VARCHAR) → BIGINT`
+### `levenshtein(VARCHAR, VARCHAR, BIGINT) → BIGINT`
+
+Computes the Levenshtein distance between two strings. The Levenshtein distance is the minimum number of single-character edits (insertions, deletions, or substitutions) required to change one string into another.
+
+The function has two variants:
+- Two-argument version: Returns the exact Levenshtein distance
+- Three-argument version: Returns the distance capped at the specified threshold (useful for performance when you only care if strings are within a certain distance)
+
+### `damerau_levenshtein(VARCHAR, VARCHAR) → BIGINT`
+### `damerau_levenshtein(VARCHAR, VARCHAR, BIGINT) → BIGINT`
+
+Computes the Damerau-Levenshtein distance between two strings. This extends the Levenshtein distance by also allowing transposition of two adjacent characters as a single edit operation, making it more suitable for detecting common typing errors.
+
+Like the Levenshtein function, it has two variants:
+- Two-argument version: Returns the exact Damerau-Levenshtein distance
+- Three-argument version: Returns the distance capped at the specified threshold
+
+Both distance functions are implemented using the [rapidfuzz-cpp](https://github.com/rapidfuzz/rapidfuzz-cpp) library, which provides high-performance string similarity algorithms.
+
 ### Example Usage
 
 ```sql
@@ -71,6 +92,23 @@ SELECT double_metaphone('Smith'); -- returns ['SM0']
 SELECT double_metaphone('Schmidt'); -- returns ['XMT', 'SMT']
 SELECT double_metaphone('Johnson'); -- returns ['JNSN']
 SELECT double_metaphone('Jackson'); -- returns ['JKSN']
+
+-- Levenshtein distance examples
+SELECT levenshtein('kitten', 'sitting'); -- returns 3
+SELECT levenshtein('Saturday', 'Sunday'); -- returns 3
+SELECT levenshtein('hello', 'hello'); -- returns 0
+
+-- Levenshtein with threshold (performance optimization)
+SELECT levenshtein('kitten', 'sitting', 2); -- returns 3 (exceeds threshold)
+SELECT levenshtein('hello', 'helo', 2); -- returns 1 (within threshold)
+
+-- Damerau-Levenshtein distance examples
+SELECT damerau_levenshtein('CA', 'AC'); -- returns 1 (transposition)
+SELECT damerau_levenshtein('kitten', 'sitting'); -- returns 3
+SELECT damerau_levenshtein('hello', 'ehllo'); -- returns 1 (transposition)
+
+-- Damerau-Levenshtein with threshold
+SELECT damerau_levenshtein('CA', 'AC', 2); -- returns 1
 ```
 
 ## Testing
@@ -109,5 +147,10 @@ To run:
 
 **splink_udfs** is primarily licensed under the [MIT License](LICENSE).
 
+
+
 **Exception:**
 The Double Metaphone implementation in `src/phonetics/double_metaphone.cpp` (and its accompanying header) is a literal C++ translation of `org.apache.commons.codec.language.DoubleMetaphone` see [here](https://javadoc.io/doc/commons-codec/commons-codec/1.6/org/apache/commons/codec/language/DoubleMetaphone.html) and is therefore licensed separately under the [Apache License 2.0](LICENSE-APACHE). See the top of `double_metaphone.cpp` for the full Apache header, and the project’s `NOTICE` file for attribution details.
+
+
+**RapidFuzz‑CPP** is MIT‑licensed implementation of Levenshtein families of algorithms.  Source is vendored under `third_party/rapidfuzz` and its license is [here](LICENSE_RAPIDFUZZ)
