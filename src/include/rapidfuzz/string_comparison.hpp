@@ -8,6 +8,7 @@
 #include <array>
 #include <utf8proc.h>
 #include <string>
+#include <unordered_map>
 
 /* ------------------------------------------------------------------------- */
 /*  UTF-8 to UTF-32 conversion for proper Unicode code-point handling       */
@@ -56,6 +57,30 @@ inline bool DefinitelyAboveK(std::string_view a, std::string_view b, int k) {
 	return (imbalance >> 1) > k; // divide by 2 without fp
 }
 
+// Overload for UTF-32 strings (Unicode-aware histogram guard)
+inline bool DefinitelyAboveK(const std::u32string &a, const std::u32string &b, int k) {
+	if (k < 0)
+		return false; // guard disabled → fall through
+
+	if (std::abs(static_cast<int>(a.size()) - static_cast<int>(b.size())) > k)
+		return true;
+
+	// For Unicode, we use a map instead of fixed array since char32_t range is large
+	std::unordered_map<char32_t, int> hist;
+
+	for (char32_t ch : a)
+		++hist[ch];
+	for (char32_t ch : b)
+		--hist[ch];
+
+	int imbalance = 0;
+	for (const auto &[ch, count] : hist)
+		imbalance += std::abs(count);
+
+	/*  Each edit can fix at most two histogram mismatches          */
+	return (imbalance >> 1) > k; // divide by 2 without fp
+}
+
 namespace duckdb {
 
 // --- Two-argument versions (no threshold) ---
@@ -91,13 +116,15 @@ inline int64_t DamerauLevenshteinDistance(std::string_view a, std::string_view b
 		return DamerauLevenshteinDistance(a, b); // Fallback for negative threshold
 	}
 
-	// Early exit if the character histogram proves the distance is > max_dist
-	if (DefinitelyAboveK(a, b, static_cast<int>(max_dist))) {
+	// --- Decode UTF‑8 → UTF‑32 ----------------------------------------
+	auto ua = Utf8ToU32(a);
+	auto ub = Utf8ToU32(b);
+
+	// Cheap histogram guard must run on the same representation
+	if (DefinitelyAboveK(ua, ub, static_cast<int>(max_dist))) {
 		return max_dist + 1;
 	}
 
-	auto ua = Utf8ToU32(a);
-	auto ub = Utf8ToU32(b);
 	return static_cast<int64_t>(
 	    rapidfuzz::experimental::damerau_levenshtein_distance(ua, ub, static_cast<size_t>(max_dist)));
 }
