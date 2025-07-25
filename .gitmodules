@@ -6,3 +6,6 @@
 	path = extension-ci-tools
 	url = https://github.com/duckdb/extension-ci-tools
 	branch = main
+[submodule "third_party/rapidfuzz"]
+	path = third_party/rapidfuzz
+	url = https://github.com/rapidfuzz/rapidfuzz-cpp.git
