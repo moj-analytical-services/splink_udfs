@@ -2336,12 +2336,12 @@ SELECT damerau_levenshtein('pdvq', 'pdvq', 7);
 0
 
 query I
-SELECT damerau_levenshtein('quote"test'quote', 'quotetestquote');
+SELECT damerau_levenshtein('quote"test''quote', 'quotetestquote');
 ----
 2
 
 query I
-SELECT damerau_levenshtein('quote"test'quote', 'quotetestquote', 8);
+SELECT damerau_levenshtein('quote"test''quote', 'quotetestquote', 8);
 ----
 2
 

@@ -6,6 +6,30 @@
 #include <cstdint>
 #include <cstdlib>
 #include <array>
+#include <utf8proc.h>
+#include <string>
+
+/* ------------------------------------------------------------------------- */
+/*  UTF-8 to UTF-32 conversion for proper Unicode code-point handling       */
+/* ------------------------------------------------------------------------- */
+static std::u32string Utf8ToU32(std::string_view in) {
+	std::u32string out;
+	out.reserve(in.size()); // upper bound
+	const utf8proc_uint8_t *p = reinterpret_cast<const utf8proc_uint8_t *>(in.data());
+	const utf8proc_uint8_t *end = p + in.size();
+
+	while (p < end) {
+		utf8proc_int32_t cp;
+		auto n = utf8proc_iterate(p, end - p, &cp);
+		if (n <= 0) { // invalid byte → skip 1
+			++p;
+			continue;
+		}
+		out.push_back(static_cast<char32_t>(cp));
+		p += n;
+	}
+	return out;
+}
 
 /* ------------------------------------------------------------------------- */
 /*  Cheap "obviously‑different" guard                                        */
@@ -36,7 +60,9 @@ namespace duckdb {
 
 // --- Two-argument versions (no threshold) ---
 inline int64_t LevenshteinDistance(const std::string_view a, const std::string_view b) {
-	return static_cast<int64_t>(rapidfuzz::levenshtein_distance(a, b));
+	auto ua = Utf8ToU32(a);
+	auto ub = Utf8ToU32(b);
+	return static_cast<int64_t>(rapidfuzz::levenshtein_distance(ua, ub));
 }
 
 // --- Three-argument versions (with threshold) ---
@@ -45,14 +71,18 @@ inline int64_t LevenshteinDistance(const std::string_view a, const std::string_v
 	if (max_dist < 0) {
 		return LevenshteinDistance(a, b); // Fallback for negative threshold
 	}
+	auto ua = Utf8ToU32(a);
+	auto ub = Utf8ToU32(b);
 	// Note: The {1, 1, 1} represents the weights for (insertion, deletion, substitution)
-	return static_cast<int64_t>(rapidfuzz::levenshtein_distance(a, b, {1, 1, 1}, static_cast<size_t>(max_dist)));
+	return static_cast<int64_t>(rapidfuzz::levenshtein_distance(ua, ub, {1, 1, 1}, static_cast<size_t>(max_dist)));
 }
 
 // --- Damerau-Levenshtein (Two-argument version) ---
 inline int64_t DamerauLevenshteinDistance(const std::string_view a, const std::string_view b) {
+	auto ua = Utf8ToU32(a);
+	auto ub = Utf8ToU32(b);
 	// Note: The function is in the 'experimental' namespace in this version of rapidfuzz
-	return static_cast<int64_t>(rapidfuzz::experimental::damerau_levenshtein_distance(a, b));
+	return static_cast<int64_t>(rapidfuzz::experimental::damerau_levenshtein_distance(ua, ub));
 }
 
 // --- Damerau-Levenshtein (Three-argument version with threshold) ---
@@ -66,8 +96,10 @@ inline int64_t DamerauLevenshteinDistance(std::string_view a, std::string_view b
 		return max_dist + 1;
 	}
 
+	auto ua = Utf8ToU32(a);
+	auto ub = Utf8ToU32(b);
 	return static_cast<int64_t>(
-	    rapidfuzz::experimental::damerau_levenshtein_distance(a, b, static_cast<size_t>(max_dist)));
+	    rapidfuzz::experimental::damerau_levenshtein_distance(ua, ub, static_cast<size_t>(max_dist)));
 }
 
 } // namespace duckdb

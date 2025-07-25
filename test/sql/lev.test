@@ -9176,12 +9176,12 @@ SELECT levenshtein('gl{qos{d', 'gl{qos{d', 12);
 0
 
 query I
-SELECT levenshtein('quote"test'quote', 'quotetestquote');
+SELECT levenshtein('quote"test''quote', 'quotetestquote');
 ----
 2
 
 query I
-SELECT levenshtein('quote"test'quote', 'quotetestquote', 3);
+SELECT levenshtein('quote"test''quote', 'quotetestquote', 3);
 ----
 2
 
