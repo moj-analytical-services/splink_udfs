@@ -7,6 +7,7 @@
 #include "phonetic/soundex.hpp"
 #include "phonetic/strip_diacritics.hpp"
 #include "phonetic/double_metaphone.hpp"
+#include "rapidfuzz/string_comparison.hpp"
 
 namespace duckdb {
 
@@ -20,6 +21,44 @@ constexpr std::array<const char *, 8> DoubleMetaphone::L_T_K_S_N_M_B_Z;
 
 static string_t MakeStringResult(Vector &result, const char *cstr) {
 	return StringVector::AddString(result, cstr);
+}
+
+// 2-argument version
+static void LevenshteinScalar(DataChunk &args, ExpressionState &state, Vector &result) {
+	BinaryExecutor::Execute<string_t, string_t, int64_t>(
+	    args.data[0], args.data[1], result, args.size(), [](string_t str_a, string_t str_b) {
+		    return LevenshteinDistance(std::string_view(str_a.GetDataUnsafe(), str_a.GetSize()),
+		                               std::string_view(str_b.GetDataUnsafe(), str_b.GetSize()));
+	    });
+}
+
+// 3-argument version with threshold
+static void LevenshteinScalarWithThreshold(DataChunk &args, ExpressionState &state, Vector &result) {
+	TernaryExecutor::Execute<string_t, string_t, int64_t, int64_t>(
+	    args.data[0], args.data[1], args.data[2], result, args.size(),
+	    [](string_t str_a, string_t str_b, int64_t max_dist) {
+		    return LevenshteinDistance(std::string_view(str_a.GetDataUnsafe(), str_a.GetSize()),
+		                               std::string_view(str_b.GetDataUnsafe(), str_b.GetSize()), max_dist);
+	    });
+}
+
+// 2-argument version
+static void DamerauLevenshteinScalar(DataChunk &args, ExpressionState &state, Vector &result) {
+	BinaryExecutor::Execute<string_t, string_t, int64_t>(
+	    args.data[0], args.data[1], result, args.size(), [](string_t str_a, string_t str_b) {
+		    return DamerauLevenshteinDistance(std::string_view(str_a.GetDataUnsafe(), str_a.GetSize()),
+		                                      std::string_view(str_b.GetDataUnsafe(), str_b.GetSize()));
+	    });
+}
+
+// 3-argument version with threshold
+static void DamerauLevenshteinScalarWithThreshold(DataChunk &args, ExpressionState &state, Vector &result) {
+	TernaryExecutor::Execute<string_t, string_t, int64_t, int64_t>(
+	    args.data[0], args.data[1], args.data[2], result, args.size(),
+	    [](string_t str_a, string_t str_b, int64_t max_dist) {
+		    return DamerauLevenshteinDistance(std::string_view(str_a.GetDataUnsafe(), str_a.GetSize()),
+		                                      std::string_view(str_b.GetDataUnsafe(), str_b.GetSize()), max_dist);
+	    });
 }
 
 static void SoundexScalar(DataChunk &data_chunk, ExpressionState & /*state*/, Vector &result) {
@@ -155,6 +194,21 @@ static void LoadInternal(DatabaseInstance &instance) {
 	ExtensionUtil::RegisterFunction(instance,
 	                                ScalarFunction("double_metaphone", {LogicalType::VARCHAR},
 	                                               LogicalType::LIST(LogicalType::VARCHAR), DoubleMetaphoneScalarList));
+
+	ScalarFunctionSet levenshtein_set("levenshtein");
+	levenshtein_set.AddFunction(
+	    ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR}, LogicalType::BIGINT, LevenshteinScalar));
+	levenshtein_set.AddFunction(ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::BIGINT},
+	                                           LogicalType::BIGINT, LevenshteinScalarWithThreshold));
+
+	ExtensionUtil::RegisterFunction(instance, levenshtein_set);
+
+	ScalarFunctionSet damerau_set("damerau_levenshtein");
+	damerau_set.AddFunction(
+	    ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR}, LogicalType::BIGINT, DamerauLevenshteinScalar));
+	damerau_set.AddFunction(ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::BIGINT},
+	                                       LogicalType::BIGINT, DamerauLevenshteinScalarWithThreshold));
+	ExtensionUtil::RegisterFunction(instance, damerau_set);
 }
 
 void SplinkUdfsExtension::Load(DuckDB &db) {

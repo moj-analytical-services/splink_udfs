@@ -1,0 +1,507 @@
+# name: test/sql/dlev.test
+# description: test dlev (Damerau‑Levenshtein) function
+# group: [sql]
+
+# Require statement will ensure this test is run with this extension loaded
+require splink_udfs
+
+query I
+SELECT damerau_levenshtein('iupnyjmguebdgljcovqkhjumysjbgprhnlihjixbzacdtcnm', 'iuqnjmeglcovqjhjumysbghnhjxbzacdtcpf');
+----
+16
+
+query I
+SELECT damerau_levenshtein('iupnyjmguebdgljcovqkhjumysjbgprhnlihjixbzacdtcnm', 'iuqnjmeglcovqjhjumysbghnhjxbzacdtcpf', 7);
+----
+8
+
+query I
+SELECT damerau_levenshtein('yfzt{qmvdyfmbjokavnclorkdjf', 'mhom{nzjbglufbpace');
+----
+24
+
+query I
+SELECT damerau_levenshtein('yfzt{qmvdyfmbjokavnclorkdjf', 'mhom{nzjbglufbpace', 9);
+----
+10
+
+query I
+SELECT damerau_levenshtein('sglghkmtanansazdvkqlxduw{stwuybsicfhbdznahnepjddrlrey', 'sglghkmtanansazdvkqlxduw{stwuybsicfhbdznahnepjddrlrey');
+----
+0
+
+query I
+SELECT damerau_levenshtein('sglghkmtanansazdvkqlxduw{stwuybsicfhbdznahnepjddrlrey', 'sglghkmtanansazdvkqlxduw{stwuybsicfhbdznahnepjddrlrey', 2);
+----
+0
+
+query I
+SELECT damerau_levenshtein('hmsemcyexbvoawbjytimnlicduzblzpezzxsenmgdjqnnvthtlldvphoxldogxejfewskugfjbsqbirpoqmipiaeuphm', 'zbqftdyoxiexzxyjeqrn');
+----
+80
+
+query I
+SELECT damerau_levenshtein('hmsemcyexbvoawbjytimnlicduzblzpezzxsenmgdjqnnvthtlldvphoxldogxejfewskugfjbsqbirpoqmipiaeuphm', 'zbqftdyoxiexzxyjeqrn', 2);
+----
+3
+
+query I
+SELECT damerau_levenshtein('cygyy{ranzljftjtbsdjblxquggdfomxbnjpohnasqghyvjvonyfrwctafovpcvni', 'cygyytranzfjfbjtbsdyxlxqulgdnomxbxxpohnasqghyvjcpnufrwctachvpcfli');
+----
+16
+
+query I
+SELECT damerau_levenshtein('cygyy{ranzljftjtbsdjblxquggdfomxbnjpohnasqghyvjvonyfrwctafovpcvni', 'cygyytranzfjfbjtbsdyxlxqulgdnomxbxxpohnasqghyvjcpnufrwctachvpcfli', 9);
+----
+10
+
+query I
+SELECT damerau_levenshtein('spcsdgyccqxhkjkvqvrhteuoplybtugdxfujp', 'nwtuyxwfflfbkwpz');
+----
+33
+
+query I
+SELECT damerau_levenshtein('spcsdgyccqxhkjkvqvrhteuoplybtugdxfujp', 'nwtuyxwfflfbkwpz', 4);
+----
+5
+
+query I
+SELECT damerau_levenshtein('goeqts{oelqrhdaodjygayzehcxqyxwjzukzlqm{erxe{gjkqimxrew', 'goeqts{oelqrhdaodjygayzehcxqyxwjzukzlqm{erxe{gjkqimxrew');
+----
+0
+
+query I
+SELECT damerau_levenshtein('goeqts{oelqrhdaodjygayzehcxqyxwjzukzlqm{erxe{gjkqimxrew', 'goeqts{oelqrhdaodjygayzehcxqyxwjzukzlqm{erxe{gjkqimxrew', 7);
+----
+0
+
+query I
+SELECT damerau_levenshtein('{{cyrzbrcwchrfhyurrtnhhcxqvoeuxzodcfywrgoswgywdbboylhqpvgdikhqgrvmrftcdumoniq', 'dzisrideggoujdcnsvttrgttzjunanr');
+----
+65
+
+query I
+SELECT damerau_levenshtein('{{cyrzbrcwchrfhyurrtnhhcxqvoeuxzodcfywrgoswgywdbboylhqpvgdikhqgrvmrftcdumoniq', 'dzisrideggoujdcnsvttrgttzjunanr', 11);
+----
+12
+
+query I
+SELECT damerau_levenshtein('bkjssmklqingkvlftonfjxswrrchvgihukgdmaloxoy', 'bknscmilqqngkvlhtowfpvsweruhvgihumgdmagoxod');
+----
+13
+
+query I
+SELECT damerau_levenshtein('bkjssmklqingkvlftonfjxswrrchvgihukgdmaloxoy', 'bknscmilqqngkvlhtowfpvsweruhvgihumgdmagoxod', 9);
+----
+10
+
+query I
+SELECT damerau_levenshtein('boub{joqgtpdettgevaunwnnuhbvrxjwh', 'wxb{jqgtdehtvevwnnbxw');
+----
+16
+
+query I
+SELECT damerau_levenshtein('boub{joqgtpdettgevaunwnnuhbvrxjwh', 'wxb{jqgtdehtvevwnnbxw', 7);
+----
+8
+
+query I
+SELECT damerau_levenshtein('texspfrpotqahwwyvfchsfdynuwkepeglmpcptnnrejnmmebeh', 'jgykmtchwguykywxzcmceflvednlbaxhxfeqyxfibhjphcp{ydnfsmcki{gjdulrydhpkv');
+----
+60
+
+query I
+SELECT damerau_levenshtein('texspfrpotqahwwyvfchsfdynuwkepeglmpcptnnrejnmmebeh', 'jgykmtchwguykywxzcmceflvednlbaxhxfeqyxfibhjphcp{ydnfsmcki{gjdulrydhpkv', 7);
+----
+8
+
+query I
+SELECT damerau_levenshtein('fooi{{r{dtxvczbffvxdlnuqwlhgwpqsvijqcfidtmjifjgodop{vdfeqdrqeeyijkxeibxmecbutmgwylo', 'ajwqpzyxrxvhk');
+----
+77
+
+query I
+SELECT damerau_levenshtein('fooi{{r{dtxvczbffvxdlnuqwlhgwpqsvijqcfidtmjifjgodop{vdfeqdrqeeyijkxeibxmecbutmgwylo', 'ajwqpzyxrxvhk', 7);
+----
+8
+
+query I
+SELECT damerau_levenshtein('gogtbqinmdvgprbfeqhjkbvwuoc{egzkacjkqu', 'kgcnbmjmfjdtblnqxxvrinusjunkowugonvqujhxjwnceboyxvyl');
+----
+45
+
+query I
+SELECT damerau_levenshtein('gogtbqinmdvgprbfeqhjkbvwuoc{egzkacjkqu', 'kgcnbmjmfjdtblnqxxvrinusjunkowugonvqujhxjwnceboyxvyl', 4);
+----
+5
+
+query I
+SELECT damerau_levenshtein('tdrekhcoyeo', 'tdkhyx');
+----
+6
+
+query I
+SELECT damerau_levenshtein('tdrekhcoyeo', 'tdkhyx', 4);
+----
+5
+
+query I
+SELECT damerau_levenshtein('vrgzfxsgepqciyxpjpwcmtggoovzwkxxmhrklturwkgcjsdyqzhgezruowhmrntdmwdpmegdgmkonnnbs{', 'ximkkjhimicdjblqebvwqkrdhbdamxjkkqhifoomcorweflghpnxzoglpwsmgcxxofqojs{e{louhqyxwphqfo');
+----
+80
+
+query I
+SELECT damerau_levenshtein('vrgzfxsgepqciyxpjpwcmtggoovzwkxxmhrklturwkgcjsdyqzhgezruowhmrntdmwdpmegdgmkonnnbs{', 'ximkkjhimicdjblqebvwqkrdhbdamxjkkqhifoomcorweflghpnxzoglpwsmgcxxofqojs{e{louhqyxwphqfo', 5);
+----
+6
+
+query I
+SELECT damerau_levenshtein('jpexqfyycsm', 'jpeqfysm');
+----
+3
+
+query I
+SELECT damerau_levenshtein('jpexqfyycsm', 'jpeqfysm', 6);
+----
+3
+
+query I
+SELECT damerau_levenshtein('ii{nuipivpcpdxwdjiqsbxtkhgdipzwxrcjrwkjf{', 'zhmhfhsdvtckw');
+----
+37
+
+query I
+SELECT damerau_levenshtein('ii{nuipivpcpdxwdjiqsbxtkhgdipzwxrcjrwkjf{', 'zhmhfhsdvtckw', 5);
+----
+6
+
+query I
+SELECT damerau_levenshtein('rqyjwkdbolxrxlwxgchzttccrnswiwytzu', 'zwmti{zufkcvxkdfuzqjxwkukdry');
+----
+31
+
+query I
+SELECT damerau_levenshtein('rqyjwkdbolxrxlwxgchzttccrnswiwytzu', 'zwmti{zufkcvxkdfuzqjxwkukdry', 6);
+----
+7
+
+query I
+SELECT damerau_levenshtein('kcxtt', 'kcxtt');
+----
+0
+
+query I
+SELECT damerau_levenshtein('kcxtt', 'kcxtt', 10);
+----
+0
+
+query I
+SELECT damerau_levenshtein('bgvwetranubusescamrrfbnoxvfcblagen{hytgsikrwoblwixqpuzfbvorvptqybapzfknjwet', 'fugx');
+----
+72
+
+query I
+SELECT damerau_levenshtein('bgvwetranubusescamrrfbnoxvfcblagen{hytgsikrwoblwixqpuzfbvorvptqybapzfknjwet', 'fugx', 2);
+----
+3
+
+query I
+SELECT damerau_levenshtein('pzswoyvuqtodq', 'imtwzljmqmguywhjfykvkgpatgmfexeyjr{ykwueldvcvrxfdussqumhepbnukvcwwdyhg');
+----
+63
+
+query I
+SELECT damerau_levenshtein('pzswoyvuqtodq', 'imtwzljmqmguywhjfykvkgpatgmfexeyjr{ykwueldvcvrxfdussqumhepbnukvcwwdyhg', 4);
+----
+5
+
+query I
+SELECT damerau_levenshtein('zjnfstzgi{xwrwpztwyrjtezgljstugqquqgwpkojmhe', '{rczcyz');
+----
+39
+
+query I
+SELECT damerau_levenshtein('zjnfstzgi{xwrwpztwyrjtezgljstugqquqgwpkojmhe', '{rczcyz', 4);
+----
+5
+
+query I
+SELECT damerau_levenshtein('pzswmlzevfgjwvmr{qhcnzwonbyxlxydfjgsnxijtiuvugkatmalzlqnau', 'bhtgrzvuxtssvqygdgwdbkicjueqrht');
+----
+49
+
+query I
+SELECT damerau_levenshtein('pzswmlzevfgjwvmr{qhcnzwonbyxlxydfjgsnxijtiuvugkatmalzlqnau', 'bhtgrzvuxtssvqygdgwdbkicjueqrht', 1);
+----
+2
+
+query I
+SELECT damerau_levenshtein('fitfidhtsqysjydedkfmcswsgjcsykraoarrzwgexhslenpbmghydyqlrojfaabsmiidprqvcmmotmc', 'ahdndcehglbyivuyfrlqffl');
+----
+68
+
+query I
+SELECT damerau_levenshtein('fitfidhtsqysjydedkfmcswsgjcsykraoarrzwgexhslenpbmghydyqlrojfaabsmiidprqvcmmotmc', 'ahdndcehglbyivuyfrlqffl', 4);
+----
+5
+
+query I
+SELECT damerau_levenshtein('mnkceqy', 'mkkc{qy');
+----
+2
+
+query I
+SELECT damerau_levenshtein('mnkceqy', 'mkkc{qy', 4);
+----
+2
+
+query I
+SELECT damerau_levenshtein('cqoflgvthythkzdkvozsyvwlhsb{lf', 'cqoflgvthythkzdkvozsyvwlhsb{lf');
+----
+0
+
+query I
+SELECT damerau_levenshtein('cqoflgvthythkzdkvozsyvwlhsb{lf', 'cqoflgvthythkzdkvozsyvwlhsb{lf', 6);
+----
+0
+
+query I
+SELECT damerau_levenshtein('mqskwhjiyvtshiefyrgtbutidcrfrjjhbt{hstt', 'spdvxiloezoivknmr');
+----
+34
+
+query I
+SELECT damerau_levenshtein('mqskwhjiyvtshiefyrgtbutidcrfrjjhbt{hstt', 'spdvxiloezoivknmr', 6);
+----
+7
+
+query I
+SELECT damerau_levenshtein('bkjccmpnuhgigqkzlavfrd', 'irgppijqduqpjwypwbxqzvoylivoxhogfovbmguxxmbup');
+----
+39
+
+query I
+SELECT damerau_levenshtein('bkjccmpnuhgigqkzlavfrd', 'irgppijqduqpjwypwbxqzvoylivoxhogfovbmguxxmbup', 4);
+----
+5
+
+query I
+SELECT damerau_levenshtein('yfeubjxwubc{srccwrfoiejbzdcguncixtmzvvrwtgxpbtnaihulbtefsddafpxtsgzbtrjc', 'yfeubjxwubc{srccwrfoiejbzdcguncixtmzvvrwtgxpbtnaihulbtefsddafpxtsgzbtrjc');
+----
+0
+
+query I
+SELECT damerau_levenshtein('yfeubjxwubc{srccwrfoiejbzdcguncixtmzvvrwtgxpbtnaihulbtefsddafpxtsgzbtrjc', 'yfeubjxwubc{srccwrfoiejbzdcguncixtmzvvrwtgxpbtnaihulbtefsddafpxtsgzbtrjc', 11);
+----
+0
+
+query I
+SELECT damerau_levenshtein('qbzjiovpracphdcgdjgpuloc{owltmizmyjbktketiwhkriclbau{pxiywrpvbgxupaqbbbmuvehmehsmdixtpneftbr', 'eqikpvljyfcuryadnkgnrrdqxhuwwxpjtztgdduipqjmtpytlhysoncbqskpnhslpd{rnevkpd{');
+----
+80
+
+query I
+SELECT damerau_levenshtein('qbzjiovpracphdcgdjgpuloc{owltmizmyjbktketiwhkriclbau{pxiywrpvbgxupaqbbbmuvehmehsmdixtpneftbr', 'eqikpvljyfcuryadnkgnrrdqxhuwwxpjtztgdduipqjmtpytlhysoncbqskpnhslpd{rnevkpd{', 1);
+----
+2
+
+query I
+SELECT damerau_levenshtein('vblfzlfmetcpsidcvokkv', 'idwbknaisfbiqixbigikoqvwcmzkkeohoihdicfdhdnukylqyvhrkfbshmxlgklxdeehsmvoxpbkgajb');
+----
+70
+
+query I
+SELECT damerau_levenshtein('vblfzlfmetcpsidcvokkv', 'idwbknaisfbiqixbigikoqvwcmzkkeohoihdicfdhdnukylqyvhrkfbshmxlgklxdeehsmvoxpbkgajb', 6);
+----
+7
+
+query I
+SELECT damerau_levenshtein('toknvn{thzxvuklyueybysrv', 'zsdimswbe');
+----
+22
+
+query I
+SELECT damerau_levenshtein('toknvn{thzxvuklyueybysrv', 'zsdimswbe', 12);
+----
+13
+
+query I
+SELECT damerau_levenshtein('sjgmwfdrqraoqbwlycigedemkdswrdxdfuotwhwrmbwqvyiglxphmxmraxffxwcagoh', 'sgmwdrqraoqbwlygedemkswrdxdfuohwrmbwyigpmxmraxfxwagh');
+----
+15
+
+query I
+SELECT damerau_levenshtein('sjgmwfdrqraoqbwlycigedemkdswrdxdfuotwhwrmbwqvyiglxphmxmraxffxwcagoh', 'sgmwdrqraoqbwlygedemkswrdxdfuohwrmbwyigpmxmraxfxwagh', 5);
+----
+6
+
+query I
+SELECT damerau_levenshtein('wkhdxvoedzhuzvzacqguui{{wheoysschoejiyvwxjpgjkcd{hrtlbccbudmyjkebvvlehmfoexukxcxucrn', 'mzlfftlbnjulenildzucsisdddyskyctsunujhhfmtzox');
+----
+72
+
+query I
+SELECT damerau_levenshtein('wkhdxvoedzhuzvzacqguui{{wheoysschoejiyvwxjpgjkcd{hrtlbccbudmyjkebvvlehmfoexukxcxucrn', 'mzlfftlbnjulenildzucsisdddyskyctsunujhhfmtzox', 9);
+----
+10
+
+query I
+SELECT damerau_levenshtein('jcoe{xpeizxwkzlasskhcgigonyccjmfrcwipsmrxwneezdpcwukjqa{prs{rksyqcjqbccxij', 'nbgueotujzumzfzw{evdtfkdyndlpgknfmvv{hi');
+----
+65
+
+query I
+SELECT damerau_levenshtein('jcoe{xpeizxwkzlasskhcgigonyccjmfrcwipsmrxwneezdpcwukjqa{prs{rksyqcjqbccxij', 'nbgueotujzumzfzw{evdtfkdyndlpgknfmvv{hi', 3);
+----
+4
+
+query I
+SELECT damerau_levenshtein('bonsgfuclxpgepkgxjxnazcsfqxsblvmofghnhioouisxqwiebjwzxisiyrjw', 'wjxtvtugtrvbrqdfvrcnrykyzwixspvwmdmnfltlsbkinvashvhruxjcixxphkmf{ahqdd{nxcfnlichzdlxtawbrd');
+----
+76
+
+query I
+SELECT damerau_levenshtein('bonsgfuclxpgepkgxjxnazcsfqxsblvmofghnhioouisxqwiebjwzxisiyrjw', 'wjxtvtugtrvbrqdfvrcnrykyzwixspvwmdmnfltlsbkinvashvhruxjcixxphkmf{ahqdd{nxcfnlichzdlxtawbrd', 3);
+----
+4
+
+query I
+SELECT damerau_levenshtein('qebdysvwgsqffvdujmkasrggkcmuexprpntwprnyqibval{rhbjibllksfunurvmncbpx', 'qeysvwgqffvdumkasggcuprpntwryqibvlrhbbllksfurvmnpx');
+----
+19
+
+query I
+SELECT damerau_levenshtein('qebdysvwgsqffvdujmkasrggkcmuexprpntwprnyqibval{rhbjibllksfunurvmncbpx', 'qeysvwgqffvdumkasggcuprpntwryqibvlrhbbllksfurvmnpx', 1);
+----
+2
+
+query I
+SELECT damerau_levenshtein('emm', 'ylbmsuiaixaomnfljgigfnxoiecuchrhwwqfnu');
+----
+36
+
+query I
+SELECT damerau_levenshtein('emm', 'ylbmsuiaixaomnfljgigfnxoiecuchrhwwqfnu', 9);
+----
+10
+
+query I
+SELECT damerau_levenshtein('ijieybmeznoiqoitaox', 'lfy{ypwacjgiqwsugbisi{gp{ck');
+----
+23
+
+query I
+SELECT damerau_levenshtein('ijieybmeznoiqoitaox', 'lfy{ypwacjgiqwsugbisi{gp{ck', 1);
+----
+2
+
+query I
+SELECT damerau_levenshtein('bzujqyp{ruosqomocw', 'ihfmdwd{wmctktrogjcd{smnekbxugepmlbrmbkrzbmvdvdjxlzsdodrecqrmucpdyjyykdywnznenvjqufxpqwwsknpjlxketm');
+----
+91
+
+query I
+SELECT damerau_levenshtein('bzujqyp{ruosqomocw', 'ihfmdwd{wmctktrogjcd{smnekbxugepmlbrmbkrzbmvdvdjxlzsdodrecqrmucpdyjyykdywnznenvjqufxpqwwsknpjlxketm', 1);
+----
+2
+
+query I
+SELECT damerau_levenshtein('wjlqhdhbxdphbegjddbezrsdpw{hh{ddxbbtjhsquxxgwjtbxzfovnlmdfrxpilphediuotqcbxcdqrws', 'wjlqhdhbxdphbegjddbezrsdpw{hh{ddxbbtjhsquxxgwjtbxzfovnlmdfrxpilphediuotqcbxcdqrws');
+----
+0
+
+query I
+SELECT damerau_levenshtein('wjlqhdhbxdphbegjddbezrsdpw{hh{ddxbbtjhsquxxgwjtbxzfovnlmdfrxpilphediuotqcbxcdqrws', 'wjlqhdhbxdphbegjddbezrsdpw{hh{ddxbbtjhsquxxgwjtbxzfovnlmdfrxpilphediuotqcbxcdqrws', 9);
+----
+0
+
+query I
+SELECT damerau_levenshtein('hmmprvylyrgdlrncccisbemtqhkweejdbrndwgemlhxyfskricwiesppkwfvzpisiihsqvemrppavmnxyiajprxskmlr', 'dmmpruylyrgdlbncccidbemmqhkweajdbrndwgpmlhlyfikrfcwiesppfwfvzpixiihsrvearppzvmjyyeajprxskklr');
+----
+19
+
+query I
+SELECT damerau_levenshtein('hmmprvylyrgdlrncccisbemtqhkweejdbrndwgemlhxyfskricwiesppkwfvzpisiihsqvemrppavmnxyiajprxskmlr', 'dmmpruylyrgdlbncccidbemmqhkweajdbrndwgpmlhlyfikrfcwiesppfwfvzpixiihsrvearppzvmjyyeajprxskklr', 5);
+----
+6
+
+query I
+SELECT damerau_levenshtein('{kvzbhoibbuwnsww{hzzncmgkrvbpbifcpuwrr{ucwhbdchmfitmbsydrytotslpopsgznb{w', 'yzywpvihlmshzmsghnbrlsfwxkszonjqrfqsrsypbghvwfwnbfpaungcezqrfxmuhinvvuwxkasniqemgory');
+----
+73
+
+query I
+SELECT damerau_levenshtein('{kvzbhoibbuwnsww{hzzncmgkrvbpbifcpuwrr{ucwhbdchmfitmbsydrytotslpopsgznb{w', 'yzywpvihlmshzmsghnbrlsfwxkszonjqrfqsrsypbghvwfwnbfpaungcezqrfxmuhinvvuwxkasniqemgory', 6);
+----
+7
+
+query I
+SELECT damerau_levenshtein('ves{wlkrxckjiejjtszklbcuhqsuotvwlbpiyfdidyn{udxjleyxcomrprngyvfff', 'veiqblkrxksuiecjkyzklbouhqzuotvwlbpibfyixynvudxjlevxpoor{rngyvfio');
+----
+21
+
+query I
+SELECT damerau_levenshtein('ves{wlkrxckjiejjtszklbcuhqsuotvwlbpiyfdidyn{udxjleyxcomrprngyvfff', 'veiqblkrxksuiecjkyzklbouhqzuotvwlbpibfyixynvudxjlevxpoor{rngyvfio', 5);
+----
+6
+
+query I
+SELECT damerau_levenshtein('mbychdsoijtlsnplffltuotsztynsivoqkszyuwbedmhz', 'mcdojtlnplfltuttszynsiwkszyujbudmz');
+----
+15
+
+query I
+SELECT damerau_levenshtein('mbychdsoijtlsnplffltuotsztynsivoqkszyuwbedmhz', 'mcdojtlnplfltuttszynsiwkszyujbudmz', 9);
+----
+10
+
+query I
+SELECT damerau_levenshtein('bwgrlocdupehbcmgrarevdhedp', 'bwgrlocdupehbcmgrarevdhedp');
+----
+0
+
+query I
+SELECT damerau_levenshtein('bwgrlocdupehbcmgrarevdhedp', 'bwgrlocdupehbcmgrarevdhedp', 5);
+----
+0
+
+query I
+SELECT damerau_levenshtein('café☕', 'cafe');
+----
+2
+
+query I
+SELECT damerau_levenshtein('café☕', 'cafe', 2);
+----
+2
+
+query I
+SELECT damerau_levenshtein('zsvvwqminqlpgquuczncastfyce', 'zsvvlqmcnqlpgquugzncastfjce');
+----
+4
+
+query I
+SELECT damerau_levenshtein('zsvvwqminqlpgquuczncastfyce', 'zsvvlqmcnqlpgquugzncastfjce', 2);
+----
+3
+
+query I
+SELECT damerau_levenshtein('rkyhooazfecirsnbvqaprexnf', 'cqxtawhzxyc{i{ejnrihekyttxnxhkobegdzftpotgtsxqvdnmhqmhevveewlbtqnmnrytbcgjiwthjvnuyziexoyjk');
+----
+77
+
+query I
+SELECT damerau_levenshtein('rkyhooazfecirsnbvqaprexnf', 'cqxtawhzxyc{i{ejnrihekyttxnxhkobegdzftpotgtsxqvdnmhqmhevveewlbtqnmnrytbcgjiwthjvnuyziexoyjk', 5);
+----
+6
+
+query I
+SELECT damerau_levenshtein('cwypxmulpdslblyygwcjxdirpycxhpicfgqmiyhzdckqzkmmpvwtjykijwkommwxtirmofcybyeufikqqtonuak', 'cymulpslblygwjxdrycxhicqmihzdckqzmmpvyjwkommwxtimocybyeufiqqtua');
+----
+24
+
+query I
+SELECT damerau_levenshtein('cwypxmulpdslblyygwcjxdirpycxhpicfgqmiyhzdckqzkmmpvwtjykijwkommwxtirmofcybyeufikqqtonuak', 'cymulpslblygwjxdrycxhicqmihzdckqzmmpvyjwkommwxtimocybyeufiqqtua', 8);
+----
+9
+
