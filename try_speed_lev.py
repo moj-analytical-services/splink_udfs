@@ -42,22 +42,23 @@ CREATE TABLE ten_mil AS (
 
 con.execute(sql)
 
-sql = """
+len = 100
+sql = f"""
 CREATE TABLE words AS
 WITH word_generation AS (
     SELECT
         -- Generate random word length between 3 and 30
-        (3 + (random() * 28)::INT) AS word_length,
+        (3 + (random() * {len})::INT) AS word_length,
         -- Generate base word from random letters
         list_transform(
-            range(3 + (random() * 28)::INT),
+            range(3 + (random() * {len})::INT),
             x -> chr(97 + (random() * 26)::INT)
         ) AS base_letters,
         -- Generate random word length between 3 and 30
-        (3 + (random() * 28)::INT) AS word_length,
+        (3 + (random() * {len})::INT) AS word_length,
         -- Generate base word from random letters
         list_transform(
-            range(3 + (random() * 28)::INT),
+            range(3 + (random() * {len})::INT),
             x -> chr(97 + (random() * 26)::INT)
         ) AS base_letter2,
         -- Random seed for mutation decisions
@@ -147,89 +148,100 @@ con.sql("SELECT * from words").show()
 
 
 # ───────────────────────────────────────────────────────────
-# 3.  Time DuckDB’s soundex across the full column.
-#     We calculate a cheap aggregate (sum of lengths) so the
-#     work happens in DuckDB but only 1 scalar result crosses
-#     the Python boundary.
+# 3.  Time DuckDB's levy functions individually
 # ───────────────────────────────────────────────────────────
-t0 = time.perf_counter()
 
+# Time levy without threshold
+t0 = time.perf_counter()
 sql = """
 SELECT count(*) as c, lev(word1, word2) AS distance
 FROM words
 GROUP BY distance
 """
 con.sql(sql).df()
-
-
 duckdb_elapsed = time.perf_counter() - t0
 print(f"lev on 10 M rows: {duckdb_elapsed:,.2f} s")
 
-
+# Time lev with threshold = 1
+t0 = time.perf_counter()
 sql = """
 SELECT count(*) as c, lev(word1, word2, 1) AS distance
 FROM words
 GROUP BY distance
 """
 con.sql(sql).df()
-
-
 duckdb_elapsed = time.perf_counter() - t0
 print(f"lev,1 on 10 M rows: {duckdb_elapsed:,.2f} s")
 
+# Time lev with threshold = 3
+t0 = time.perf_counter()
+sql = """
+SELECT count(*) as c, lev(word1, word2, 3) AS distance
+FROM words
+GROUP BY distance
+"""
+con.sql(sql).df()
+duckdb_elapsed = time.perf_counter() - t0
+print(f"lev,3 on 10 M rows: {duckdb_elapsed:,.2f} s")
 
+
+# Time standard levenshtein
+t0 = time.perf_counter()
 sql = """
 SELECT count(*) as c, levenshtein(word1, word2) AS distance
 FROM words
 GROUP BY distance
 """
 con.sql(sql).df()
-
-
 duckdb_elapsed = time.perf_counter() - t0
 print(f"levenshtein on 10 M rows: {duckdb_elapsed:,.2f} s")
 
 
 # ───────────────────────────────────────────────────────────
-# 3.  Time DuckDB’s soundex across the full column.
-#     We calculate a cheap aggregate (sum of lengths) so the
-#     work happens in DuckDB but only 1 scalar result crosses
-#     the Python boundary.
+# 4.  Time DuckDB's dlev functions individually
 # ───────────────────────────────────────────────────────────
 print("-----")
-t0 = time.perf_counter()
 
+# Time dlev without threshold
+t0 = time.perf_counter()
 sql = """
 SELECT count(*) as c, dlev(word1, word2) AS distance
 FROM words
 GROUP BY distance
 """
 con.sql(sql).df()
-
-
 duckdb_elapsed = time.perf_counter() - t0
 print(f"dlev on 10 M rows: {duckdb_elapsed:,.2f} s")
 
-
+# Time dlev with threshold = 1
+t0 = time.perf_counter()
 sql = """
 SELECT count(*) as c, dlev(word1, word2, 1) AS distance
 FROM words
 GROUP BY distance
 """
 con.sql(sql).df()
-
-
 duckdb_elapsed = time.perf_counter() - t0
 print(f"dlev,1 on 10 M rows: {duckdb_elapsed:,.2f} s")
 
+# Time dlev with threshold = 3
+t0 = time.perf_counter()
+sql = """
+SELECT count(*) as c, dlev(word1, word2, 3) AS distance
+FROM words
+GROUP BY distance
+"""
+con.sql(sql).df()
+duckdb_elapsed = time.perf_counter() - t0
+print(f"dlev,3 on 10 M rows: {duckdb_elapsed:,.2f} s")
 
+# Time standard damerau_levenshtein
+t0 = time.perf_counter()
 sql = """
 SELECT count(*) as c, damerau_levenshtein(word1, word2) AS distance
 FROM words
 GROUP BY distance
 """
 con.sql(sql).df()
-
-
 duckdb_elapsed = time.perf_counter() - t0
 print(f"DuckDB damerau_levenshtein on 10 M rows: {duckdb_elapsed:,.2f} s")
