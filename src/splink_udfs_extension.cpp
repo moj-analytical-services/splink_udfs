@@ -7,7 +7,7 @@
 #include "phonetic/soundex.hpp"
 #include "phonetic/strip_diacritics.hpp"
 #include "phonetic/double_metaphone.hpp"
-#include "string_comparison.hpp"
+#include "rapidfuzz/string_comparison.hpp"
 
 namespace duckdb {
 
