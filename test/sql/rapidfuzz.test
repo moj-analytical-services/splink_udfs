@@ -1,0 +1,13 @@
+# name: test/sql/soundex.test
+# description: test soundex function
+# group: [sql]
+
+
+
+# Require statement will ensure this test is run with this extension loaded
+require splink_udfs
+
+query I
+SELECT lev('kitten','sitting');
+----
+3
