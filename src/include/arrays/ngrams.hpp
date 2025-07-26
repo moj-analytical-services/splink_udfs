@@ -1,174 +1,183 @@
-//===----------------------------------------------------------------------===//
-// ngrams(list [, n])                                            SPLINK‑UDFS
-// Header‑only implementation – uses only DuckDB public headers (C++11)
-// Produces LIST(ARRAY(child_type, n)) of every contiguous n‑gram in the input
-// list.  Requires that `n` is a positive scalar constant at bind‑time.
-//===----------------------------------------------------------------------===//
 #pragma once
-#include "duckdb.hpp"
+// SPDX‑License‑Identifier: MIT
+// ---------------------------------------------------------------------------
+//  ngrams(list<any> [, n BIGINT]) → LIST(ARRAY(any,n))
+// ---------------------------------------------------------------------------
+
 #include "duckdb/common/types/vector.hpp"
+#include "duckdb/common/vector_operations/vector_operations.hpp"
 #include "duckdb/function/scalar_function.hpp"
+#include "duckdb/execution/expression_executor.hpp"
 #include "duckdb/main/extension_util.hpp"
-#include <cinttypes>
 
-namespace splink_udfs {
-using namespace duckdb;
+namespace duckdb {
 
-// -------------------------------------------------------------------------
+//===--------------------------------------------------------------------===//
 // Bind data
-// -------------------------------------------------------------------------
+//===--------------------------------------------------------------------===//
 struct NgramsBindData : public FunctionData {
-	idx_t n;                 // fixed length of every ARRAY element
-	LogicalType child_type;  // element type of the incoming LIST
-	LogicalType return_type; // LIST(ARRAY(child_type,n))
+	idx_t n;
+	LogicalType child_type;
 
-public:
-	//! Copy / equals boiler‑plate
-	unique_ptr<FunctionData> Copy() const override {
-		return make_uniq<NgramsBindData>(*this);
+	NgramsBindData(idx_t n_p, LogicalType child) : n(n_p), child_type(std::move(child)) {
 	}
-	bool Equals(const FunctionData &other_p) const override {
-		auto &other = const_cast<FunctionData &>(other_p).Cast<NgramsBindData>();
-		return other.n == n && other.child_type == child_type;
+
+	unique_ptr<FunctionData> Copy() const override {
+		return make_uniq<NgramsBindData>(n, child_type);
+	}
+	bool Equals(const FunctionData &other) const override {
+		auto &o = other.Cast<NgramsBindData>();
+		return n == o.n && LogicalType::AllEqual(child_type, o.child_type);
 	}
 };
 
-// -------------------------------------------------------------------------
-// Binding
-// -------------------------------------------------------------------------
-static unique_ptr<FunctionData> NgramsBind(ClientContext &context, ScalarFunction &func,
-                                           vector<unique_ptr<Expression>> &arguments) {
-	// ---------- validate first argument ----------
-	if (arguments[0]->return_type.id() != LogicalTypeId::LIST) {
-		throw BinderException("ngrams: first argument must be a LIST<T>");
+//===--------------------------------------------------------------------===//
+// Binder
+//===--------------------------------------------------------------------===//
+static unique_ptr<FunctionData> NgramsBind(ClientContext &context, ScalarFunction &bound_function,
+                                           vector<unique_ptr<Expression>> &args) {
+	if (args.empty() || args.size() > 2) {
+		throw BinderException("ngrams: expected 1 or 2 arguments");
 	}
-	auto child_type = ListType::GetChildType(arguments[0]->return_type);
+	// First argument must be LIST
+	auto &list_type = args[0]->return_type;
+	if (list_type.id() != LogicalTypeId::LIST) {
+		throw BinderException("ngrams: first argument must be a LIST");
+	}
+	auto child_type = ListType::GetChildType(list_type);
 
-	// ---------- obtain & validate n (constant!) ----------
-	Value n_val = Value::BIGINT(2); // default
-	if (arguments.size() == 2) {
-		if (!arguments[1]->IsFoldable()) {
-			throw BinderException("ngrams: n must be a constant scalar");
+	// Resolve n (constant, defaults to 2)
+	idx_t n = 2;
+	if (args.size() == 2) {
+		if (!args[1]->IsFoldable()) {
+			throw BinderException("ngrams: n must be a constant");
 		}
-		n_val = ExpressionExecutor::EvaluateScalar(context, *arguments[1]);
+		Value v = ExpressionExecutor::EvaluateScalar(context, *args[1]);
+		if (v.IsNull()) {
+			throw BinderException("ngrams: n can not be NULL");
+		}
+		n = v.GetValue<idx_t>();
 	}
-	if (n_val.IsNull()) {
-		throw BinderException("ngrams: n cannot be NULL");
-	}
-	if (!n_val.DefaultCastAs(LogicalType::BIGINT)) {
-		throw BinderException("ngrams: n must be BIGINT");
-	}
-	auto n = n_val.GetValueUnsafe<int64_t>();
 	if (n <= 0) {
-		throw BinderException("ngrams: n must be positive");
+		throw BinderException("ngrams: n must be a positive integer");
 	}
 
-	// ---------- construct return type ----------
-	LogicalType array_type = LogicalType::ARRAY(child_type, n);
-	LogicalType return_type = LogicalType::LIST(array_type);
-	func.return_type = return_type;
+	// Fix the argument types and return type
+	bound_function.arguments[0] = list_type; // concrete LIST type
+	if (args.size() == 2) {
+		bound_function.arguments[1] = LogicalType::BIGINT;
+	}
+	LogicalType array_type = LogicalType::ARRAY(child_type, n); // ARRAY(any,n)
+	bound_function.return_type = LogicalType::LIST(array_type); // LIST(ARRAY(...))
 
-	auto bind = make_uniq<NgramsBindData>();
-	bind->n = static_cast<idx_t>(n);
-	bind->child_type = child_type;
-	bind->return_type = return_type;
-	return std::move(bind);
+	return make_uniq<NgramsBindData>(n, child_type);
 }
 
-// -------------------------------------------------------------------------
-// Execution
-// -------------------------------------------------------------------------
+//===--------------------------------------------------------------------===//
+// Executor
+//===--------------------------------------------------------------------===//
 static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) {
-	auto &bind_data = state.bind_data->Cast<NgramsBindData>();
-	const idx_t n = bind_data.n;
-	const idx_t count = args.size();
+	auto &bind = state.bind_data->Cast<NgramsBindData>();
+	const idx_t n = bind.n;
+	idx_t row_count = args.size();
 
-	// ----- read input LIST -----
-	auto &in_list_vec = args.data[0];
-	UnifiedVectorFormat list_uf;
-	in_list_vec.ToUnifiedFormat(count, list_uf);
-	auto in_entries = reinterpret_cast<list_entry_t *>(list_uf.data);
-	auto &in_child = ListVector::GetEntry(in_list_vec);
+	auto &in_list = args.data[0];
+	result.SetVectorType(VectorType::FLAT_VECTOR);
+	ListVector::Reserve(result, STANDARD_VECTOR_SIZE);
 
-	// ---- first pass: determine #arrays per row & total capacity ----
-	vector<idx_t> per_row(count, 0);
-	idx_t total_arrays = 0;
+	// Input list: flatten metadata
+	UnifiedVectorFormat list_data;
+	in_list.ToUnifiedFormat(row_count, list_data);
+	auto list_entries = UnifiedVectorFormat::GetData<list_entry_t>(list_data);
+	auto &input_child = ListVector::GetEntry(in_list);
+	idx_t input_child_size = ListVector::GetListSize(in_list);
 
-	for (idx_t i = 0; i < count; ++i) {
-		const idx_t idx = list_uf.sel->get_index(i);
-		if (!list_uf.validity.RowIsValid(idx)) {
-			continue; // NULL row – leave per_row[i]==0; will mark NULL later
+	// We copy from a flattened view of the child once
+	Vector input_child_flat(input_child);
+	input_child_flat.Flatten(input_child_size);
+
+	// First pass – count total n‑grams
+	idx_t total_ngrams = 0;
+	for (idx_t row = 0; row < row_count; ++row) {
+		auto idx = list_data.sel->get_index(row);
+		if (!list_data.validity.RowIsValid(idx)) {
+			continue; // NULL row
 		}
-		auto len = in_entries[idx].length;
+		auto len = list_entries[idx].length;
 		if (len >= n) {
-			per_row[i] = len - n + 1;
-			total_arrays += per_row[i];
+			total_ngrams += len - n + 1;
 		}
 	}
 
-	// ---- prepare result LIST(ARRAY(child,n)) ----
-	ListVector::SetListSize(result, 0); // start empty
-	ListVector::Reserve(result, total_arrays);
-	auto &arrays_vec = ListVector::GetEntry(result); // VECTOR<ARRAY>
-	FixedListVector::Reserve(arrays_vec, total_arrays);
-	FixedListVector::SetListSize(arrays_vec, total_arrays);
+	// Reserve outer/inner space
+	ListVector::Reserve(result, total_ngrams);
+	ListVector::SetListSize(result, total_ngrams);
 
-	auto &array_values = FixedListVector::GetData(arrays_vec); // child vector holding real values
+	auto &array_vec = ListVector::GetEntry(result);       // ARRAY(...)
+	auto &array_child = ArrayVector::GetEntry(array_vec); // inner scalar values
+	array_child.Resize(0, total_ngrams * n);
+	array_child.Flatten(total_ngrams * n);
 
-	// convenience pointers
 	auto res_entries = FlatVector::GetData<list_entry_t>(result);
 	auto &res_validity = FlatVector::Validity(result);
 
-	// ---- second pass: populate ----
-	idx_t global_array_idx = 0; // running offset into arrays_vec
-	for (idx_t i = 0; i < count; ++i) {
-		const idx_t sel_idx = list_uf.sel->get_index(i);
+	SelectionVector sel(n);
+	idx_t next_array_idx = 0; // counts arrays (outer list)
+	idx_t next_child_idx = 0; // counts scalar elements in array_child
 
-		// NULL row?
-		if (!list_uf.validity.RowIsValid(sel_idx)) {
-			res_validity.SetInvalid(i);
+	for (idx_t row = 0; row < row_count; ++row) {
+		auto iidx = list_data.sel->get_index(row);
+		if (!list_data.validity.RowIsValid(iidx)) {
+			res_validity.SetInvalid(row);
+			res_entries[row] = {next_array_idx, 0};
 			continue;
 		}
 
-		// empty n‑gram list
-		if (per_row[i] == 0) {
-			res_entries[i].offset = global_array_idx;
-			res_entries[i].length = 0;
-			continue;
-		}
+		const auto list_len = list_entries[iidx].length;
+		const auto list_start = list_entries[iidx].offset;
+		const idx_t out_len = (list_len < n) ? 0 : (list_len - n + 1);
 
-		// offset/length for this outer row
-		res_entries[i].offset = global_array_idx;
-		res_entries[i].length = per_row[i];
+		res_entries[row] = {next_array_idx, out_len};
 
-		const auto src_off = in_entries[sel_idx].offset;
-
-		for (idx_t j = 0; j < per_row[i]; ++j, ++global_array_idx) {
-			// copy 'n' contiguous elements starting at src_off + j into destination
-			const idx_t dest_off = global_array_idx * n;
-			VectorOperations::Copy(in_child, array_values, src_off + j, dest_off, n);
+		for (idx_t g = 0; g < out_len; ++g) {
+			// Build selection for this n‑gram
+			for (idx_t k = 0; k < n; ++k) {
+				sel.set_index(k, list_start + g + k);
+			}
+			// Copy n elements into the correct slice of array_child
+			VectorOperations::Copy(input_child_flat, array_child, sel, n, 0, next_child_idx);
+			next_child_idx += n;
+			++next_array_idx;
 		}
 	}
 
-	// ensure outer validity mask written for all rows without NULLs
-	res_validity.EnsureWritable();
+	D_ASSERT(next_array_idx == total_ngrams);
+	D_ASSERT(next_child_idx == total_ngrams * n);
 }
 
-// -------------------------------------------------------------------------
-// Registration helper
-// -------------------------------------------------------------------------
-static inline void RegisterNgrams(DatabaseInstance &inst) {
+//===--------------------------------------------------------------------===//
+// Factory helpers
+//===--------------------------------------------------------------------===//
+static ScalarFunction MakeFuncOneArg() {
+	ScalarFunction fun("ngrams", {LogicalTypeId::LIST}, LogicalTypeId::LIST, NgramsExec, NgramsBind);
+	fun.null_handling = FunctionNullHandling::SPECIAL_HANDLING;
+	return fun;
+}
+static ScalarFunction MakeFuncTwoArgs() {
+	ScalarFunction fun("ngrams", {LogicalTypeId::LIST, LogicalTypeId::BIGINT}, LogicalTypeId::LIST, NgramsExec,
+	                   NgramsBind);
+	fun.null_handling = FunctionNullHandling::SPECIAL_HANDLING;
+	return fun;
+}
+
+//===--------------------------------------------------------------------===//
+// Registrar – call from the extension’s LoadInternal()
+//===--------------------------------------------------------------------===//
+static inline void RegisterNgrams(DatabaseInstance &db) {
 	ScalarFunctionSet set("ngrams");
-
-	// (1) one‑argument form  → defaults n=2
-	set.AddFunction(ScalarFunction({LogicalType::LIST(LogicalType::ANY)}, LogicalTypeId::ANY /* filled in binder */,
-	                               NgramsExec, NgramsBind));
-
-	// (2) two‑argument form
-	set.AddFunction(ScalarFunction({LogicalType::LIST(LogicalType::ANY), LogicalType::BIGINT},
-	                               LogicalTypeId::ANY /* filled in binder */, NgramsExec, NgramsBind));
-
-	ExtensionUtil::RegisterFunction(inst, set);
+	set.AddFunction(MakeFuncTwoArgs());
+	set.AddFunction(MakeFuncOneArg()); // default n = 2
+	ExtensionUtil::RegisterFunction(db, set);
 }
 
-} // namespace splink_udfs
+} // namespace duckdb
