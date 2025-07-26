@@ -160,3 +160,18 @@ query I
 SELECT soundex('Émilie');
 ----
 M400
+
+query I
+SELECT soundex(NULL);
+----
+NULL
+
+query I
+SELECT soundex('');
+----
+0000
+
+query I
+SELECT soundex(' ');
+----
+0000

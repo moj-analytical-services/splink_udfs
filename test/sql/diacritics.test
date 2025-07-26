@@ -4,6 +4,18 @@
 
 require splink_udfs
 
+
+query I
+SELECT strip_diacritics(NULL);
+----
+NULL
+
+query I
+SELECT strip_diacritics('');
+----
+(empty)
+
+
 # Basic German and French test
 query I
 SELECT strip_diacritics('Jürgen Thérèse');
