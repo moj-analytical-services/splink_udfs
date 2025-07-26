@@ -96,6 +96,8 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 	const idx_t n = bind.n;
 	idx_t row_count = args.size();
 
+	bool fast_string_path = bind.child_type.InternalType() == PhysicalType::VARCHAR;
+
 	auto &in_list = args.data[0];
 	result.SetVectorType(VectorType::FLAT_VECTOR);
 	ListVector::Reserve(result, STANDARD_VECTOR_SIZE);
@@ -128,14 +130,45 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 		}
 	}
 
+	unique_ptr<SelectionVector> dict_sel;
+	if (fast_string_path && total_ngrams > 0) {
+		dict_sel = make_uniq<SelectionVector>(total_ngrams * n);
+		idx_t pos = 0;
+		for (idx_t row = 0; row < row_count; ++row) {
+			auto idx = list_data.sel->get_index(row);
+			if (!list_data.validity.RowIsValid(idx))
+				continue;
+
+			auto len = list_entries[idx].length;
+			auto start = list_entries[idx].offset;
+			if (len < n)
+				continue;
+
+			for (idx_t g = 0; g < len - n + 1; ++g)
+				for (idx_t k = 0; k < n; ++k)
+					dict_sel->set_index(pos++, start + g + k);
+		}
+		D_ASSERT(pos == total_ngrams * n);
+	}
+
 	// Reserve outer/inner space
 	ListVector::Reserve(result, total_ngrams);
 	ListVector::SetListSize(result, total_ngrams);
 
 	auto &array_vec = ListVector::GetEntry(result);       // ARRAY(...)
 	auto &array_child = ArrayVector::GetEntry(array_vec); // inner scalar values
-	array_child.Resize(0, total_ngrams * n);
-	array_child.Flatten(total_ngrams * n);
+	if (!fast_string_path) {
+		array_child.Resize(0, total_ngrams * n);
+		array_child.Flatten(total_ngrams * n);
+	}
+
+	if (fast_string_path) {
+		// Build a dictionary view on top of `input_child`
+		Vector dict_child(input_child.GetType());
+		dict_child.Reference(input_child);             // share buffers
+		dict_child.Slice(*dict_sel, total_ngrams * n); // turns it into a dictionary vector
+		array_child.Reference(dict_child);             // ARRAY now points to that dictionary
+	}
 
 	auto res_entries = FlatVector::GetData<list_entry_t>(result);
 	auto &res_validity = FlatVector::Validity(result);
@@ -157,6 +190,15 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 
 		res_entries[row] = {next_array_idx, out_len};
 
+		if (fast_string_path) {
+			// only adjust `next_array_idx` / `next_child_idx`, no copying
+			next_child_idx += out_len * n;
+			next_array_idx += out_len;
+			continue; // jump to next row
+		}
+
+		/* -------- original VectorOperations::Copy loop stays below this line
+		   and will only be executed for non‑string input -------------------- */
 		for (idx_t g = 0; g < out_len; ++g) {
 			// Build selection for this n‑gram
 			for (idx_t k = 0; k < n; ++k) {
