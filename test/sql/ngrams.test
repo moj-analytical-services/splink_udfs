@@ -1,0 +1,118 @@
+# name: test/sql/ngrams.test
+# description: test ngrams function
+# group: [sql]
+
+require splink_udfs
+
+
+
+# Test 2: Basic 3-grams with string list
+query I
+SELECT ngrams(['a', 'b', 'c', 'd'], 3);
+----
+[[a, b, c], [b, c, d]]
+
+# Test 3: Single element list (less than n)
+query I
+SELECT ngrams(['a'], 2);
+----
+[]
+
+# Test 4: Two element list with 2-grams
+query I
+SELECT ngrams(['hello', 'world'], 2);
+----
+[[hello, world]]
+
+# Test 5: Empty list
+query I
+SELECT ngrams([], 2);
+----
+[]
+
+# Test 6: 4-grams with string list
+query I
+SELECT ngrams(['the', 'quick', 'brown', 'fox', 'jumps'], 4);
+----
+[[the, quick, brown, fox], [quick, brown, fox, jumps]]
+
+# Test 7: 1-grams (unigrams)
+query I
+SELECT ngrams(['apple', 'banana', 'cherry'], 1);
+----
+[[apple], [banana], [cherry]]
+
+# Test 8: Integer list with 2-grams
+query I
+SELECT ngrams([1, 2, 3, 4, 5], 2);
+----
+[[1, 2], [2, 3], [3, 4], [4, 5]]
+
+# Test 9: Integer list with 3-grams
+query I
+SELECT ngrams([10, 20, 30, 40], 3);
+----
+[[10, 20, 30], [20, 30, 40]]
+
+
+# Test 11: Exact length match (n equals list length)
+query I
+SELECT ngrams(['x', 'y', 'z'], 3);
+----
+[[x, y, z]]
+
+# Test 12: Large n (greater than list length)
+query I
+SELECT ngrams(['a', 'b'], 5);
+----
+[]
+
+# Test 13: Boolean values
+query I
+SELECT ngrams([true, false, true, false], 2);
+----
+[[true, false], [false, true], [true, false]]
+
+# Test 14: Single character analysis
+query I
+SELECT ngrams(['h', 'e', 'l', 'l', 'o'], 3);
+----
+[[h, e, l], [e, l, l], [l, l, o]]
+
+# Test 15: Longer text analysis with 5-grams
+query I
+SELECT ngrams(['the', 'quick', 'brown', 'fox', 'jumps', 'over', 'lazy', 'dog'], 5);
+----
+[[the, quick, brown, fox, jumps], [quick, brown, fox, jumps, over], [brown, fox, jumps, over, lazy], [fox, jumps, over, lazy, dog]]
+
+
+
+# Test 17: Decimal/float numbers
+query I
+SELECT ngrams([1.5, 2.7, 3.14, 4.0], 2);
+----
+[[1.50, 2.70], [2.70, 3.14], [3.14, 4.00]]
+
+
+query I
+SELECT ngrams([100, 200, 300, 400, 500],2);
+----
+[[100, 200], [200, 300], [300, 400], [400, 500]]
+
+# Test 19: Large ngram size with sufficient elements
+query I
+SELECT ngrams(['a', 'b', 'c', 'd', 'e', 'f', 'g'], 6);
+----
+[[a, b, c, d, e, f], [b, c, d, e, f, g]]
+
+# Test 20: Date/timestamp values (if supported)
+query I
+SELECT ngrams(['2023-01-01', '2023-01-02', '2023-01-03', '2023-01-04'], 3);
+----
+[[2023-01-01, 2023-01-02, 2023-01-03], [2023-01-02, 2023-01-03, 2023-01-04]]
+
+# Test 16: NULL handling - NULL list
+query I
+SELECT ngrams(NULL, 2);
+----
+NULL
