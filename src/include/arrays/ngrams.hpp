@@ -84,6 +84,9 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 	result.SetVectorType(VectorType::FLAT_VECTOR);
 	ListVector::Reserve(result, STANDARD_VECTOR_SIZE);
 
+	// Create one reusable SelectionVector after row_count is known
+	SelectionVector sel(STANDARD_VECTOR_SIZE);
+
 	// Input list: flatten metadata
 	UnifiedVectorFormat list_data;
 	in_list.ToUnifiedFormat(row_count, list_data);
@@ -91,9 +94,10 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 	auto &input_child = ListVector::GetEntry(in_list);
 	idx_t input_child_size = ListVector::GetListSize(in_list);
 
-	// We copy from a flattened view of the child once
-	Vector input_child_flat(input_child);
-	input_child_flat.Flatten(input_child_size);
+	// Use UnifiedVectorFormat instead of full flatten
+	UnifiedVectorFormat child_view;
+	input_child.ToUnifiedFormat(input_child_size, child_view);
+	auto child_data = UnifiedVectorFormat::GetData<data_t>(child_view);
 
 	// First pass – count total n‑grams
 	idx_t total_ngrams = 0;
@@ -120,7 +124,6 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 	auto res_entries = FlatVector::GetData<list_entry_t>(result);
 	auto &res_validity = FlatVector::Validity(result);
 
-	SelectionVector sel(n);
 	idx_t next_array_idx = 0; // counts arrays (outer list)
 	idx_t next_child_idx = 0; // counts scalar elements in array_child
 
@@ -143,8 +146,8 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 			for (idx_t k = 0; k < n; ++k) {
 				sel.set_index(k, list_start + g + k);
 			}
-			// Copy n elements into the correct slice of array_child
-			VectorOperations::Copy(input_child_flat, array_child, sel, n, 0, next_child_idx);
+			// Copy n elements into the correct slice of array_child using original vector
+			VectorOperations::Copy(input_child, array_child, sel, n, 0, next_child_idx);
 			next_child_idx += n;
 			++next_array_idx;
 		}
