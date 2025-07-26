@@ -69,7 +69,16 @@ Like the Levenshtein function, it has two variants:
 
 Both distance functions are implemented using the [rapidfuzz-cpp](https://github.com/rapidfuzz/rapidfuzz-cpp) library, which provides high-performance string similarity algorithms.
 
-### Example Usage
+### `ngrams(LIST(any), BIGINT) → LIST(ARRAY(any, n))`
+
+Generates n-grams from a list of elements. An n-gram is a contiguous sequence of `n` elements from the input list.
+
+- The first argument must be a list of any type or `NULL`.
+- The second argument is a constant positive integer `n` specifying the size of the n-grams.
+
+The function returns a list of arrays, where each array contains `n` elements from the input list.
+
+#### Example Usage
 
 ```sql
 -- Soundex examples
@@ -98,7 +107,7 @@ SELECT levenshtein('kitten', 'sitting'); -- returns 3
 SELECT levenshtein('Saturday', 'Sunday'); -- returns 3
 SELECT levenshtein('hello', 'hello'); -- returns 0
 
--- Levenshtein with threshold (performance optimization)
+-- Levenshtein with max threshold (performance optimization)
 SELECT levenshtein('kitten', 'sitting', 2); -- returns 3 (exceeds threshold)
 SELECT levenshtein('hello', 'helo', 2); -- returns 1 (within threshold)
 
@@ -107,8 +116,13 @@ SELECT damerau_levenshtein('CA', 'AC'); -- returns 1 (transposition)
 SELECT damerau_levenshtein('kitten', 'sitting'); -- returns 3
 SELECT damerau_levenshtein('hello', 'ehllo'); -- returns 1 (transposition)
 
--- Damerau-Levenshtein with threshold
+-- Damerau-Levenshtein with max threshold
 SELECT damerau_levenshtein('CA', 'AC', 2); -- returns 1
+
+-- ngrams
+SELECT ngrams([1, 2, 3, 4], 2); -- returns [[1, 2], [2, 3], [3, 4]]
+SELECT ngrams(['a', 'b', 'c', 'd'], 3); -- returns [['a', 'b', 'c'], ['b', 'c', 'd']]
+
 ```
 
 ## Testing
