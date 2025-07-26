@@ -138,7 +138,7 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 			result.SetVectorType(VectorType::CONSTANT_VECTOR);
 			ConstantVector::SetNull(result, true);
 		} else {
-			// --- NEW: produce an empty list for every row in a flat vector ---
+			// --- produce an empty list for every row in a flat vector ---
 			result.SetVectorType(VectorType::FLAT_VECTOR);
 			ListVector::Reserve(result, 0); // no child elements
 			ListVector::SetListSize(result, 0);
@@ -228,8 +228,6 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 			continue; // jump to next row
 		}
 
-		/* -------- original VectorOperations::Copy loop stays below this line
-		   and will only be executed for non‑string input -------------------- */
 		for (idx_t g = 0; g < out_len; ++g) {
 			// Build selection for this n‑gram
 			for (idx_t k = 0; k < n; ++k) {
