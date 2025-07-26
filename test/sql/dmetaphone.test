@@ -4,6 +4,15 @@
 
 require splink_udfs
 
+query I
+SELECT double_metaphone(NULL);
+----
+NULL
+
+query I
+SELECT double_metaphone('');
+----
+[]
 
 query I
 SELECT double_metaphone('Arnold');

@@ -4,6 +4,16 @@
 
 require splink_udfs
 
+query I
+SELECT unaccent(NULL);
+----
+NULL
+
+query I
+SELECT unaccent('');
+----
+(empty)
+
 # Test that it performs the same as strip_diacritics for simple cases
 query I
 SELECT unaccent('Jürgen Thérèse');
