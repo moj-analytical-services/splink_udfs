@@ -119,15 +119,32 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 
 	// First pass – count total n‑grams
 	idx_t total_ngrams = 0;
+	bool all_rows_null = true;
 	for (idx_t row = 0; row < row_count; ++row) {
 		auto idx = list_data.sel->get_index(row);
 		if (!list_data.validity.RowIsValid(idx)) {
 			continue; // NULL row
 		}
+		all_rows_null = false;
 		auto len = list_entries[idx].length;
 		if (len >= n) {
 			total_ngrams += len - n + 1;
 		}
+	}
+
+	// ───── fast bail‑out: nothing to emit ────────────────
+	if (total_ngrams == 0) {
+		if (all_rows_null) {
+			// All input rows are NULL, so result should be NULL
+			result.SetVectorType(VectorType::CONSTANT_VECTOR);
+			ConstantVector::SetNull(result, true);
+		} else {
+			// Input is valid but produces no ngrams (e.g., too short), result should be empty list
+			result.SetVectorType(VectorType::CONSTANT_VECTOR);
+			ConstantVector::SetNull(result, false);                // not NULL, just empty list
+			FlatVector::GetData<list_entry_t>(result)[0] = {0, 0}; // offset=0, length=0
+		}
+		return;
 	}
 
 	unique_ptr<SelectionVector> dict_sel;
@@ -162,7 +179,7 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 		array_child.Flatten(total_ngrams * n);
 	}
 
-	if (fast_string_path) {
+	if (fast_string_path && total_ngrams > 0) {
 		// Build a dictionary view on top of `input_child`
 		Vector dict_child(input_child.GetType());
 		dict_child.Reference(input_child);             // share buffers
