@@ -100,10 +100,9 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 
 	auto &in_list = args.data[0];
 	result.SetVectorType(VectorType::FLAT_VECTOR);
-	ListVector::Reserve(result, STANDARD_VECTOR_SIZE);
 
 	// Create one reusable SelectionVector after row_count is known
-	SelectionVector sel(STANDARD_VECTOR_SIZE);
+	SelectionVector scratch_sel(STANDARD_VECTOR_SIZE);
 
 	// Input list: flatten metadata
 	UnifiedVectorFormat list_data;
@@ -155,13 +154,13 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 		return;
 	}
 
-	// --- NEW: allocate a SelectionVector buffer that lives as long as `result` ---
-	buffer_ptr<SelectionData> sel_buffer;
-	SelectionVector *dict_sel = nullptr;
+	// --- allocate selection buffer & build dictionary indices (fast string path) ---
+	buffer_ptr<SelectionData> sel_buffer; // will also hold the SelectionVector
+	SelectionVector sel_dict;             // defined only if we take the fast path
+
 	if (fast_string_path && total_ngrams > 0) {
-		sel_buffer = make_shared_ptr<SelectionData>(total_ngrams * n);
-		SelectionVector sel_vec(sel_buffer);
-		dict_sel = &sel_vec;
+		sel_buffer = make_buffer<SelectionData>(total_ngrams * n); // owns data
+		sel_dict = SelectionVector(sel_buffer);                    // views data
 
 		idx_t pos = 0;
 		for (idx_t row = 0; row < row_count; ++row) {
@@ -169,14 +168,14 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 			if (!list_data.validity.RowIsValid(idx))
 				continue;
 
-			auto len = list_entries[idx].length;
-			auto start = list_entries[idx].offset;
+			const auto len = list_entries[idx].length;
+			const auto start = list_entries[idx].offset;
 			if (len < n)
 				continue;
 
 			for (idx_t g = 0; g < len - n + 1; ++g)
 				for (idx_t k = 0; k < n; ++k)
-					dict_sel->set_index(pos++, start + g + k);
+					sel_dict.set_index(pos++, start + g + k);
 		}
 		D_ASSERT(pos == total_ngrams * n);
 	}
@@ -193,15 +192,13 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 	}
 
 	if (fast_string_path && total_ngrams > 0) {
-		// Build a dictionary view on top of `input_child`
 		Vector dict_child(input_child.GetType());
-		dict_child.Reference(input_child); // share buffers
+		dict_child.Reference(input_child); // share payload
 
-		// Create a SelectionVector that owns its data using the shared SelectionData
-		SelectionVector owned_sel(sel_buffer);
-		dict_child.Slice(owned_sel, total_ngrams * n); // turns it into a dictionary vector
+		// zero‑copy slice + attach buffer for lifetime safety
+		dict_child.Slice(sel_dict, total_ngrams * n);
 
-		array_child.Reference(dict_child); // ARRAY now points to that dictionary
+		array_child.Reference(dict_child); // ARRAY now points to safe dictionary
 	}
 
 	auto res_entries = FlatVector::GetData<list_entry_t>(result);
@@ -236,10 +233,10 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 		for (idx_t g = 0; g < out_len; ++g) {
 			// Build selection for this n‑gram
 			for (idx_t k = 0; k < n; ++k) {
-				sel.set_index(k, list_start + g + k);
+				scratch_sel.set_index(k, list_start + g + k);
 			}
 			// Copy n elements into the correct slice of array_child using original vector
-			VectorOperations::Copy(input_child, array_child, sel, n, 0, next_child_idx);
+			VectorOperations::Copy(input_child, array_child, scratch_sel, n, 0, next_child_idx);
 			next_child_idx += n;
 			++next_array_idx;
 		}
