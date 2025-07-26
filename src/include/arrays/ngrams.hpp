@@ -38,8 +38,8 @@ struct NgramsBindData : public FunctionData {
 //===--------------------------------------------------------------------===//
 static unique_ptr<FunctionData> NgramsBind(ClientContext &context, ScalarFunction &bound_function,
                                            vector<unique_ptr<Expression>> &args) {
-	if (args.empty() || args.size() > 2) {
-		throw BinderException("ngrams: expected 1 or 2 arguments");
+	if (args.size() != 2) {
+		throw BinderException("ngrams: expected exactly two arguments (list, n)");
 	}
 	// First argument must be LIST
 	auto &list_type = args[0]->return_type;
@@ -48,27 +48,22 @@ static unique_ptr<FunctionData> NgramsBind(ClientContext &context, ScalarFunctio
 	}
 	auto child_type = ListType::GetChildType(list_type);
 
-	// Resolve n (constant, defaults to 2)
-	idx_t n = 2;
-	if (args.size() == 2) {
-		if (!args[1]->IsFoldable()) {
-			throw BinderException("ngrams: n must be a constant");
-		}
-		Value v = ExpressionExecutor::EvaluateScalar(context, *args[1]);
-		if (v.IsNull()) {
-			throw BinderException("ngrams: n can not be NULL");
-		}
-		n = v.GetValue<idx_t>();
+	// Parse n (constant BIGINT, 1‑based)
+	if (!args[1]->IsFoldable()) {
+		throw BinderException("ngrams: n must be a constant");
 	}
+	Value v = ExpressionExecutor::EvaluateScalar(context, *args[1]).CastAs(context, LogicalType::BIGINT);
+	if (v.IsNull()) {
+		throw BinderException("ngrams: n cannot be NULL");
+	}
+	auto n = v.GetValue<idx_t>();
 	if (n <= 0) {
 		throw BinderException("ngrams: n must be a positive integer");
 	}
 
 	// Fix the argument types and return type
 	bound_function.arguments[0] = list_type; // concrete LIST type
-	if (args.size() == 2) {
-		bound_function.arguments[1] = LogicalType::BIGINT;
-	}
+	bound_function.arguments[1] = LogicalType::BIGINT;
 	LogicalType array_type = LogicalType::ARRAY(child_type, n); // ARRAY(any,n)
 	bound_function.return_type = LogicalType::LIST(array_type); // LIST(ARRAY(...))
 
@@ -162,13 +157,7 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 //===--------------------------------------------------------------------===//
 // Factory helpers
 //===--------------------------------------------------------------------===//
-static ScalarFunction MakeFuncOneArg() {
-	auto list_any = LogicalType::LIST(LogicalType::ANY);
-	ScalarFunction fun("ngrams", {list_any}, list_any, NgramsExec, NgramsBind);
-	fun.null_handling = FunctionNullHandling::SPECIAL_HANDLING;
-	return fun;
-}
-static ScalarFunction MakeFuncTwoArgs() {
+static ScalarFunction MakeFunc() {
 	auto list_any = LogicalType::LIST(LogicalType::ANY);
 	ScalarFunction fun("ngrams", {list_any, LogicalType::BIGINT}, list_any, NgramsExec, NgramsBind);
 	fun.null_handling = FunctionNullHandling::SPECIAL_HANDLING;
@@ -180,8 +169,7 @@ static ScalarFunction MakeFuncTwoArgs() {
 //===--------------------------------------------------------------------===//
 static inline void RegisterNgrams(DatabaseInstance &db) {
 	ScalarFunctionSet set("ngrams");
-	set.AddFunction(MakeFuncTwoArgs());
-	set.AddFunction(MakeFuncOneArg()); // default n = 2
+	set.AddFunction(MakeFunc());
 	ExtensionUtil::RegisterFunction(db, set);
 }
 

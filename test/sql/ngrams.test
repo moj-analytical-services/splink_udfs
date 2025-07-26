@@ -4,11 +4,7 @@
 
 require splink_udfs
 
-# Test 1: Basic 2-grams (default n=2) with string list
-query I
-SELECT ngrams(['a', 'b', 'c', 'd']);
-----
-[[a, b], [b, c], [c, d]]
+
 
 # Test 2: Basic 3-grams with string list
 query I
@@ -48,7 +44,7 @@ SELECT ngrams(['apple', 'banana', 'cherry'], 1);
 
 # Test 8: Integer list with 2-grams
 query I
-SELECT ngrams([1, 2, 3, 4, 5]);
+SELECT ngrams([1, 2, 3, 4, 5], 2);
 ----
 [[1, 2], [2, 3], [3, 4], [4, 5]]
 
@@ -97,9 +93,9 @@ SELECT ngrams([1.5, 2.7, 3.14, 4.0], 2);
 ----
 [[1.50, 2.70], [2.70, 3.14], [3.14, 4.00]]
 
-# Test 18: Default n=2 with numbers
+
 query I
-SELECT ngrams([100, 200, 300, 400, 500]);
+SELECT ngrams([100, 200, 300, 400, 500],2);
 ----
 [[100, 200], [200, 300], [300, 400], [400, 500]]
 
