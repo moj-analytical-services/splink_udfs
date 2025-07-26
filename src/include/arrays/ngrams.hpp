@@ -4,11 +4,13 @@
 //  ngrams(list<any> [, n BIGINT]) → LIST(ARRAY(any,n))
 // ---------------------------------------------------------------------------
 
+#include "duckdb.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/common/vector_operations/vector_operations.hpp"
 #include "duckdb/function/scalar_function.hpp"
 #include "duckdb/execution/expression_executor.hpp"
 #include "duckdb/main/extension_util.hpp"
+#include "duckdb/planner/expression/bound_function_expression.hpp"
 
 namespace duckdb {
 
@@ -27,7 +29,7 @@ struct NgramsBindData : public FunctionData {
 	}
 	bool Equals(const FunctionData &other) const override {
 		auto &o = other.Cast<NgramsBindData>();
-		return n == o.n && LogicalType::AllEqual(child_type, o.child_type);
+		return n == o.n && child_type == o.child_type; // Fix: Use == operator instead of AllEqual
 	}
 };
 
@@ -77,7 +79,9 @@ static unique_ptr<FunctionData> NgramsBind(ClientContext &context, ScalarFunctio
 // Executor
 //===--------------------------------------------------------------------===//
 static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) {
-	auto &bind = state.bind_data->Cast<NgramsBindData>();
+	// Fix: Access bind data through the function expression
+	auto &func_expr = state.expr.Cast<BoundFunctionExpression>();
+	auto &bind = func_expr.bind_info->Cast<NgramsBindData>();
 	const idx_t n = bind.n;
 	idx_t row_count = args.size();
 
@@ -159,19 +163,20 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 // Factory helpers
 //===--------------------------------------------------------------------===//
 static ScalarFunction MakeFuncOneArg() {
-	ScalarFunction fun("ngrams", {LogicalTypeId::LIST}, LogicalTypeId::LIST, NgramsExec, NgramsBind);
+	auto list_any = LogicalType::LIST(LogicalType::ANY);
+	ScalarFunction fun("ngrams", {list_any}, list_any, NgramsExec, NgramsBind);
 	fun.null_handling = FunctionNullHandling::SPECIAL_HANDLING;
 	return fun;
 }
 static ScalarFunction MakeFuncTwoArgs() {
-	ScalarFunction fun("ngrams", {LogicalTypeId::LIST, LogicalTypeId::BIGINT}, LogicalTypeId::LIST, NgramsExec,
-	                   NgramsBind);
+	auto list_any = LogicalType::LIST(LogicalType::ANY);
+	ScalarFunction fun("ngrams", {list_any, LogicalType::BIGINT}, list_any, NgramsExec, NgramsBind);
 	fun.null_handling = FunctionNullHandling::SPECIAL_HANDLING;
 	return fun;
 }
 
 //===--------------------------------------------------------------------===//
-// Registrar – call from the extension’s LoadInternal()
+// Registrar – call from the extension's LoadInternal()
 //===--------------------------------------------------------------------===//
 static inline void RegisterNgrams(DatabaseInstance &db) {
 	ScalarFunctionSet set("ngrams");

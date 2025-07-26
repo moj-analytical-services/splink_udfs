@@ -211,7 +211,7 @@ static void LoadInternal(DatabaseInstance &instance) {
 	                                       LogicalType::BIGINT, DamerauLevenshteinScalarWithThreshold));
 	ExtensionUtil::RegisterFunction(instance, damerau_set);
 
-	splink_udfs::RegisterNgrams(instance);
+	RegisterNgrams(instance);
 }
 
 void SplinkUdfsExtension::Load(DuckDB &db) {
