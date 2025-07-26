@@ -8,6 +8,7 @@
 #include "phonetic/strip_diacritics.hpp"
 #include "phonetic/double_metaphone.hpp"
 #include "rapidfuzz/string_comparison.hpp"
+#include "arrays/ngrams.hpp"
 
 namespace duckdb {
 
@@ -209,6 +210,8 @@ static void LoadInternal(DatabaseInstance &instance) {
 	damerau_set.AddFunction(ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::BIGINT},
 	                                       LogicalType::BIGINT, DamerauLevenshteinScalarWithThreshold));
 	ExtensionUtil::RegisterFunction(instance, damerau_set);
+
+	splink_udfs::RegisterNgrams(instance);
 }
 
 void SplinkUdfsExtension::Load(DuckDB &db) {
