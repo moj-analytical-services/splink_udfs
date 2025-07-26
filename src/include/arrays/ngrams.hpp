@@ -5,16 +5,11 @@
 // list.  Requires that `n` is a positive scalar constant at bind‑time.
 //===----------------------------------------------------------------------===//
 #pragma once
-
 #include "duckdb.hpp"
-
-#include "duckdb/common/exception.hpp"
-#include "duckdb/common/types/fixed_list_vector.hpp"
-#include "duckdb/common/types/list_vector.hpp"
+#include "duckdb/common/types/vector.hpp"
 #include "duckdb/function/scalar_function.hpp"
-#include "duckdb/execution/expression_executor.hpp"
-#include "duckdb/function/function_set.hpp"
-#include "duckdb/common/vector_operations/vector_operations.hpp"
+#include "duckdb/main/extension_util.hpp"
+#include <cinttypes>
 
 namespace splink_udfs {
 using namespace duckdb;
