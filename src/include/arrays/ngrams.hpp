@@ -10,6 +10,7 @@
 #include "duckdb/function/scalar_function.hpp"
 #include "duckdb/execution/expression_executor.hpp"
 #include "duckdb/main/extension_util.hpp"
+#include "duckdb/planner/expression/bound_cast_expression.hpp"
 #include "duckdb/planner/expression/bound_function_expression.hpp"
 
 namespace duckdb {
@@ -41,12 +42,27 @@ static unique_ptr<FunctionData> NgramsBind(ClientContext &context, ScalarFunctio
 	if (args.size() != 2) {
 		throw BinderException("ngrams: expected exactly two arguments (list, n)");
 	}
-	// First argument must be LIST
-	auto &list_type = args[0]->return_type;
-	if (list_type.id() != LogicalTypeId::LIST) {
-		throw BinderException("ngrams: first argument must be a LIST");
+	// First argument must be LIST or NULL
+	// --- determine list element type ------------------------------------------
+	auto &arg0_type = args[0]->return_type;
+
+	LogicalType list_type;
+	LogicalType child_type;
+
+	if (arg0_type.id() == LogicalTypeId::SQLNULL) {
+		// Special case: user wrote ngrams(NULL, n) → use VARCHAR as fallback
+		// This avoids issues with ANY types in the internal type system
+		list_type = LogicalType::LIST(LogicalType::VARCHAR);
+		child_type = LogicalType::VARCHAR;
+
+		// Inject an implicit cast so the rest of the pipeline sees the right type
+		args[0] = BoundCastExpression::AddCastToType(context, std::move(args[0]), list_type);
+	} else if (arg0_type.id() == LogicalTypeId::LIST) {
+		list_type = arg0_type;
+		child_type = ListType::GetChildType(list_type);
+	} else {
+		throw BinderException("ngrams: first argument must be a LIST or NULL");
 	}
-	auto child_type = ListType::GetChildType(list_type);
 
 	// Parse n (constant BIGINT, 1‑based)
 	if (!args[1]->IsFoldable()) {
