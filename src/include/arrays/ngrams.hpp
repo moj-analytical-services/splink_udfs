@@ -139,17 +139,30 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 			result.SetVectorType(VectorType::CONSTANT_VECTOR);
 			ConstantVector::SetNull(result, true);
 		} else {
-			// Input is valid but produces no ngrams (e.g., too short), result should be empty list
-			result.SetVectorType(VectorType::CONSTANT_VECTOR);
-			ConstantVector::SetNull(result, false);                // not NULL, just empty list
-			FlatVector::GetData<list_entry_t>(result)[0] = {0, 0}; // offset=0, length=0
+			// --- NEW: produce an empty list for every row in a flat vector ---
+			result.SetVectorType(VectorType::FLAT_VECTOR);
+			ListVector::Reserve(result, 0); // no child elements
+			ListVector::SetListSize(result, 0);
+
+			auto res_entries = FlatVector::GetData<list_entry_t>(result);
+			auto &res_validity = FlatVector::Validity(result);
+
+			for (idx_t row = 0; row < row_count; ++row) {
+				res_entries[row] = {0, 0}; // offset 0, length 0
+				                           // validity already true (not NULL)
+			}
 		}
 		return;
 	}
 
-	unique_ptr<SelectionVector> dict_sel;
+	// --- NEW: allocate a SelectionVector buffer that lives as long as `result` ---
+	buffer_ptr<SelectionData> sel_buffer;
+	SelectionVector *dict_sel = nullptr;
 	if (fast_string_path && total_ngrams > 0) {
-		dict_sel = make_uniq<SelectionVector>(total_ngrams * n);
+		sel_buffer = make_shared_ptr<SelectionData>(total_ngrams * n);
+		SelectionVector sel_vec(sel_buffer);
+		dict_sel = &sel_vec;
+
 		idx_t pos = 0;
 		for (idx_t row = 0; row < row_count; ++row) {
 			auto idx = list_data.sel->get_index(row);
@@ -182,9 +195,13 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 	if (fast_string_path && total_ngrams > 0) {
 		// Build a dictionary view on top of `input_child`
 		Vector dict_child(input_child.GetType());
-		dict_child.Reference(input_child);             // share buffers
-		dict_child.Slice(*dict_sel, total_ngrams * n); // turns it into a dictionary vector
-		array_child.Reference(dict_child);             // ARRAY now points to that dictionary
+		dict_child.Reference(input_child); // share buffers
+
+		// Create a SelectionVector that owns its data using the shared SelectionData
+		SelectionVector owned_sel(sel_buffer);
+		dict_child.Slice(owned_sel, total_ngrams * n); // turns it into a dictionary vector
+
+		array_child.Reference(dict_child); // ARRAY now points to that dictionary
 	}
 
 	auto res_entries = FlatVector::GetData<list_entry_t>(result);
