@@ -213,6 +213,28 @@ static void LoadInternal(DatabaseInstance &instance) {
 
 void SplinkUdfsExtension::Load(DuckDB &db) {
 	LoadInternal(*db.instance);
+
+	duckdb::Connection con(db);
+	con.Query(R"SQL(
+    CREATE OR REPLACE MACRO histogram_using_within_group_counts(arr, grp) AS (
+        map_from_entries(
+          list_filter(
+            map_entries(
+              list_aggregate(
+                flatten(
+                  array_agg(arr) OVER (
+                    PARTITION BY grp
+                    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+                  )
+                ),
+                'histogram'
+              )
+            ),
+            x -> list_contains(arr, x.key)
+          )
+        )
+    );
+)SQL");
 }
 
 std::string SplinkUdfsExtension::Name() {
