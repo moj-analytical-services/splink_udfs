@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include <utf8proc.h>
+#include "utf8proc_compat.hpp"
 #include "duckdb/common/exception.hpp"
 
 namespace phonetic {
@@ -18,8 +18,8 @@ using Utf8Buf = std::unique_ptr<utf8proc_uint8_t, Utf8procDeleter>;
 
 inline std::string StripDiacritics(const std::string &utf8) {
 	utf8proc_uint8_t *out_raw = nullptr;
-	constexpr utf8proc_option_t FLAGS = static_cast<utf8proc_option_t>(UTF8PROC_NULLTERM | // NUL-terminated input
-	                                                                   UTF8PROC_COMPAT |   // expand ligatures (Æ→AE)
+	constexpr utf8proc_option_t FLAGS = static_cast<utf8proc_option_t>(UTF8PROC_NULLTERM |  // NUL-terminated input
+	                                                                   UTF8PROC_COMPAT |    // expand ligatures (Æ→AE)
 	                                                                   UTF8PROC_DECOMPOSE | // NFKD decomposition
 	                                                                   UTF8PROC_STRIPMARK | // drop combining accents
 	                                                                   UTF8PROC_LUMP        // fold punctuation variants

@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <array>
-#include <utf8proc.h>
+#include "utf8proc_compat.hpp"
 #include <string>
 #include <unordered_map>
 
