@@ -21,9 +21,9 @@ build_static_extension(splink_udfs ${EXTENSION_SOURCES})
 # WASM escape hatch: bake static libs into the .wasm side-module
 if(EMSCRIPTEN)
   set(DUCKDB_EXTENSION_SPLINK_UDFS_LINKED_LIBS
-    "../../third_party/rapidfuzz/librapidfuzz.a;
-     ../../third_party/utf8proc/libduckdb_utf8proc.a"
+    $<TARGET_FILE:duckdb_utf8proc>
   )
+
 endif()
 
 # Loadable (.so/.dylib/.duckdb_extension.wasm)
