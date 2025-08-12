@@ -1,35 +1,45 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
+project(splink_udfs LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# DuckDB helper macros (defined by the extension toolchain)
+add_extension_definitions()
+
+# ---- vendored deps ----
 add_subdirectory(third_party/rapidfuzz EXCLUDE_FROM_ALL)
 
-set(TARGET_NAME splink_udfs)
+# ---- sources ----
+set(EXTENSION_SOURCES
+  src/splink_udfs_extension.cpp
+)
 
+# ---- build targets ----
+build_static_extension(splink_udfs ${EXTENSION_SOURCES})
 
+# WASM escape hatch: bake static libs into the .wasm side-module
+if(EMSCRIPTEN)
+  set(DUCKDB_EXTENSION_SPLINK_UDFS_LINKED_LIBS
+    $<TARGET_FILE:duckdb_utf8proc>
+  )
 
-set(EXTENSION_NAME ${TARGET_NAME}_extension)
-set(LOADABLE_EXTENSION_NAME ${TARGET_NAME}_loadable_extension)
+endif()
 
-project(${TARGET_NAME})
+# Loadable (.so/.dylib/.duckdb_extension.wasm)
+build_loadable_extension(splink_udfs "-warnings" ${EXTENSION_SOURCES})
 
-find_package(unofficial-utf8proc CONFIG REQUIRED)
+# ---- link for native builds (non-WASM) ----
+# Use the plain signature to stay consistent with DuckDB's macros.
+target_link_libraries(splink_udfs_extension          rapidfuzz::rapidfuzz duckdb_utf8proc)
+target_link_libraries(splink_udfs_loadable_extension rapidfuzz::rapidfuzz duckdb_utf8proc)
 
-
-include_directories(src/include)
-
-set(EXTENSION_SOURCES src/splink_udfs_extension.cpp)
-
-build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})
-build_loadable_extension(${TARGET_NAME} " " ${EXTENSION_SOURCES})
-
-
-target_link_libraries(${EXTENSION_NAME}           utf8proc rapidfuzz::rapidfuzz)
-target_link_libraries(${LOADABLE_EXTENSION_NAME}  utf8proc rapidfuzz::rapidfuzz)
-
+# ---- install ----
+# Also install/export the rapidfuzz target so the export set is complete.
+# (The real library target name exported by RapidFuzz is usually 'rapidfuzz'.)
 install(
-  TARGETS ${EXTENSION_NAME} rapidfuzz
+  TARGETS splink_udfs_extension rapidfuzz
   EXPORT "${DUCKDB_EXPORT_SET}"
   LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
-  ARCHIVE DESTINATION "${INSTALL_LIB_DIR}")
+  ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
+)

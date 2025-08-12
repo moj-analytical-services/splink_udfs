@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include <utf8proc.h>
+#include "utf8proc_compat.hpp"
 #include "duckdb/common/exception.hpp"
 
 namespace phonetic {
