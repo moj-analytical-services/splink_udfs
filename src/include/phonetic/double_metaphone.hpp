@@ -256,6 +256,9 @@ private:
 	static std::string CleanInput(const std::string &input) {
 		std::string out;
 		out.reserve(input.size());
+		// If the word begins with a Turkish silent/normalizer letter, skip it and
+		// also drop the *first* vowel so DoubleMetaphone won't add an initial 'A'.
+		bool suppress_first_vowel = false;
 
 		for (std::size_t i = 0; i < input.size();) {
 			unsigned char b1 = static_cast<unsigned char>(input[i]);
@@ -298,9 +301,46 @@ private:
 				continue;
 			}
 
+			// Turkish letters --------------------------------------------------
+			//  ı (U+0131)  → 'I'         (so rules like CI/CE/CY and G+I fire)
+			//  İ (U+0130)  → drop if at absolute start (avoid leading 'A')
+			//  ğ/Ğ (U+011F/U+011E) → silent lengthener; skip entirely
+			if (b1 == 0xC4 && i + 1 < input.size()) {
+				unsigned char b2 = static_cast<unsigned char>(input[i + 1]);
+				// Dotless i (small) and dotted I (capital) → ASCII 'I'
+				if (b2 == 0xB1 || b2 == 0xB0) { // 0xC4 0xB1 = ı, 0xC4 0xB0 = İ
+					// NEW: if it's capital dotted İ and we're at the very start, drop it
+					// so the metaphone doesn't emit an initial 'A'.
+					if (b2 == 0xB0 && out.empty()) {
+						i += 2;
+						continue;
+					}
+					out.push_back('I');
+					i += 2;
+					continue;
+				}
+				// g-breve (small/capital) → skip (acts like vowel length/glide)
+				if (b2 == 0x9F || b2 == 0x9E) { // 0xC4 0x9F = ğ, 0xC4 0x9E = Ğ
+					// NEW: if this is the very first letter, also suppress the first
+					// following vowel so we don't get a leading 'A'.
+					if (out.empty())
+						suppress_first_vowel = true;
+					i += 2;
+					continue;
+				}
+			}
+
 			// -------------------------------------------------------------------
 			if (!std::isspace(b1)) {
-				out.push_back(static_cast<char>(std::toupper(b1)));
+				unsigned char up = static_cast<unsigned char>(std::toupper(b1));
+				// If we began with a Turkish Ğ/ğ, drop the first vowel entirely so
+				// the cleaned string doesn't start with a vowel (prevents 'A').
+				if (out.empty() && suppress_first_vowel && IsVowel(static_cast<char>(up))) {
+					suppress_first_vowel = false; // only once
+					++i;
+					continue;
+				}
+				out.push_back(static_cast<char>(up));
 			}
 			++i;
 		}
