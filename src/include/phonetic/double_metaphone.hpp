@@ -281,6 +281,23 @@ private:
 				}
 			}
 
+			// German sharp‑s --------------------------------------------------------------
+			//   ß  →  0xC3 0x9F   (small)
+			//   ẞ  →  0xE1 0xBA 0x9E (capital)
+			if (b1 == 0xC3 && i + 1 < input.size() && static_cast<unsigned char>(input[i + 1]) == 0x9F) {
+				// Unicode small sharp‑s (ß) → single 'S' in metaphone
+				out.push_back('S');
+				i += 2;
+				continue;
+			}
+			if (b1 == 0xE1 && i + 2 < input.size() && static_cast<unsigned char>(input[i + 1]) == 0xBA &&
+			    static_cast<unsigned char>(input[i + 2]) == 0x9E) {
+				// Unicode capital sharp‑s (ẞ) → single 'S'
+				out.push_back('S');
+				i += 3;
+				continue;
+			}
+
 			// -------------------------------------------------------------------
 			if (!std::isspace(b1)) {
 				out.push_back(static_cast<char>(std::toupper(b1)));
