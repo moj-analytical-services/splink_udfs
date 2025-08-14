@@ -5014,3 +5014,88 @@ SELECT double_metaphone('Philothei');
 ----
 [FL0, FLT]
 
+query I
+SELECT double_metaphone('Maaß');
+----
+[MS]
+
+query I
+SELECT double_metaphone('Fußmann');
+----
+[FSMN]
+
+query I
+SELECT double_metaphone('Heß');
+----
+[HS]
+
+query I
+SELECT double_metaphone('Peßler');
+----
+[PSLR]
+
+query I
+SELECT double_metaphone('Boßdorf');
+----
+[PSTRF]
+
+query I
+SELECT double_metaphone('Endreß');
+----
+[ANTRS]
+
+query I
+SELECT double_metaphone('Kreißig');
+----
+[KRSK]
+
+query I
+SELECT double_metaphone('Sträßer');
+----
+[STRSR]
+
+query I
+SELECT double_metaphone('Wißen');
+----
+[ASN, FSN]
+
+query I
+SELECT double_metaphone('Moßmann');
+----
+[MSMN]
+
+query I
+SELECT double_metaphone('Frießner');
+----
+[FRSNR]
+
+query I
+SELECT double_metaphone('Haßelmann');
+----
+[HSLMN]
+
+query I
+SELECT double_metaphone('Claßen');
+----
+[KLSN]
+
+query I
+SELECT double_metaphone('Barfuß');
+----
+[PRFS]
+
+query I
+SELECT double_metaphone('Clauß');
+----
+[KLS]
+
+query I
+SELECT double_metaphone('Deußer');
+----
+[TSR]
+
+query I
+SELECT double_metaphone('Eißmann');
+----
+[ASMN]
+

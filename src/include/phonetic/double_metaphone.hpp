@@ -261,11 +261,21 @@ private:
 			unsigned char b1 = static_cast<unsigned char>(input[i]);
 
 			// --- UTF-8 special cases -------------------------------------------
-			//  ç  →  0xC3 0xA7   (lower-case)
-			//  Ç  →  0xC3 0x87   (upper-case)
+			//  ç  →  C3 A7
+			//  Ç  →  C3 87
+			//  ñ  →  C3 B1
+			//  Ñ  →  C3 91
+			//  ß  →  C3 9F        (map to "SS")
+			//  ẞ  →  E1 BA 9E     (map to "SS")
 			if (b1 == 0xC3 && i + 1 < input.size()) {
 				unsigned char b2 = static_cast<unsigned char>(input[i + 1]);
 
+				// sharp s (ß) → "SS"
+				if (b2 == 0x9F) { // ß
+					out.append("SS");
+					i += 2;
+					continue;
+				}
 				// Cedilla maps to the Java branch that appends 'S'
 				if (b2 == 0xA7 || b2 == 0x87) { // ç or Ç
 					out.push_back('S');
@@ -277,6 +287,16 @@ private:
 				if (b2 == 0xB1 || b2 == 0x91) { // ñ or Ñ
 					out.push_back('N');
 					i += 2;
+					continue;
+				}
+			}
+			// capital sharp s (ẞ) → "SS"
+			if (b1 == 0xE1 && i + 2 < input.size()) {
+				unsigned char b2 = static_cast<unsigned char>(input[i + 1]);
+				unsigned char b3 = static_cast<unsigned char>(input[i + 2]);
+				if (b2 == 0xBA && b3 == 0x9E) { // ẞ
+					out.append("SS");
+					i += 3;
 					continue;
 				}
 			}
