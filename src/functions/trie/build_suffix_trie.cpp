@@ -103,8 +103,9 @@ static void MergeTrie(TrieNode &dst, const TrieNode &src) {
 	dst.cnt += src.cnt;
 	for (auto const &kv : src.next) {
 		auto &dchild = dst.next[kv.first];
-		if (!dchild)
+		if (!dchild) {
 			dchild = make_uniq<TrieNode>();
+		}
 		MergeTrie(*dchild, *kv.second);
 	}
 }
@@ -150,8 +151,10 @@ static void SerializeNodeV1(const TrieNode &n, vector<uint8_t> &buf) {
 	// collect & sort keys
 	vector<pair<string, const TrieNode *>> items;
 	items.reserve(n.next.size());
-	for (auto &kv : n.next)
+	for (auto &kv : n.next) {
 		items.emplace_back(kv.first, kv.second.get());
+	}
+
 	sort(items.begin(), items.end(),
 	     [](const pair<string, const TrieNode *> &a, const pair<string, const TrieNode *> &b) {
 		     return a.first < b.first;

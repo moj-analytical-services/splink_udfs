@@ -131,10 +131,11 @@ uint32_t CountTail(const ParsedTrie &pt, const std::vector<std::string> &tail_re
 				found = true;
 				break;
 			}
-			if (cmp < 0)
+			if (cmp < 0) {
 				hi = mid;
-			else
+			} else {
 				lo = mid + 1;
+			}
 		}
 		if (!found)
 			return 0;
