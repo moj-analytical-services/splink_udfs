@@ -9,6 +9,7 @@
 #include "phonetic/double_metaphone.hpp"
 #include "rapidfuzz/string_comparison.hpp"
 #include "arrays/ngrams.hpp"
+#include "trie/address_trie_functions.hpp"
 
 namespace duckdb {
 
@@ -212,6 +213,12 @@ static void LoadInternal(DatabaseInstance &instance) {
 	ExtensionUtil::RegisterFunction(instance, damerau_set);
 
 	RegisterNgrams(instance);
+
+	// ---- NEW: trie + address helpers ----
+	ExtensionUtil::RegisterFunction(instance, GetBuildSuffixTrieAggregateSet());
+	ExtensionUtil::RegisterFunction(instance, GetPeelEndTokensFunctionSet());
+	ExtensionUtil::RegisterFunction(instance, GetBuildCleanedAddressFunctionSet());
+	ExtensionUtil::RegisterFunction(instance, GetFormatAddressWithCountsFunctionSet());
 }
 
 void SplinkUdfsExtension::Load(DuckDB &db) {
