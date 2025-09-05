@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 #include <memory>
+#include <typeinfo>
 
 namespace duckdb {
 
@@ -33,7 +34,10 @@ struct PeelBindData : public FunctionData {
 		return std::move(res);
 	}
 	bool Equals(const FunctionData &other_p) const override {
-		auto &o = dynamic_cast<const PeelBindData &>(other_p);
+		if (typeid(*this) != typeid(other_p)) {
+			return false;
+		}
+		const auto &o = static_cast<const PeelBindData &>(other_p);
 		return steps == o.steps && max_k == o.max_k;
 	}
 };

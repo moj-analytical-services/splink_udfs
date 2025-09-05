@@ -44,7 +44,7 @@ public:
 		lru_list.splice(lru_list.begin(), lru_list, it->second);
 		return it->second->value;
 	}
-	void Put(CacheKey key, CacheValue value) {
+	void Put(CacheKey key, const CacheValue &value) {
 		auto it = cache_map.find(key);
 		if (it != cache_map.end()) {
 			it->second->value = value;
