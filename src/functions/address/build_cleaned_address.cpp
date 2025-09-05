@@ -122,8 +122,9 @@ static void BuildCleanedAddressExec(DataChunk &args, ExpressionState &state, Vec
 			continue;
 		}
 		int32_t threshold = thr_vals[tid];
-		if (threshold < 0)
+		if (threshold < 0) {
 			threshold = 0; // clamp
+		}
 
 		// Joiner: if NULL, treat as single space (typical)
 		std::string joiner_str;
@@ -147,8 +148,9 @@ static void BuildCleanedAddressExec(DataChunk &args, ExpressionState &state, Vec
 		toks.reserve(le.length);
 		for (idx_t k = 0; k < le.length; ++k) {
 			const auto cidx = child_uvf.sel->get_index(le.offset + k);
-			if (!child_uvf.validity.RowIsValid(cidx))
+			if (!child_uvf.validity.RowIsValid(cidx)) {
 				continue;
+			}
 			toks.emplace_back(child_vals[cidx].GetString());
 		}
 
@@ -205,15 +207,17 @@ static void BuildCleanedAddressExec(DataChunk &args, ExpressionState &state, Vec
 		if (keep_end > 0) {
 			for (idx_t j = 0; j < keep_end; ++j)
 				total_len += toks[j].size();
-			if (keep_end >= 2)
+			if (keep_end >= 2) {
 				total_len += (keep_end - 1) * joiner_str.size();
+			}
 		}
 
 		std::string out_str;
 		out_str.reserve(total_len);
 		for (idx_t j = 0; j < keep_end; ++j) {
-			if (j > 0)
+			if (j > 0) {
 				out_str += joiner_str;
+			}
 			out_str += toks[j];
 		}
 

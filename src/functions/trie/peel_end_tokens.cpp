@@ -33,7 +33,7 @@ struct PeelBindData : public FunctionData {
 		return std::move(res);
 	}
 	bool Equals(const FunctionData &other_p) const override {
-		auto &o = (const PeelBindData &)other_p;
+		auto &o = dynamic_cast<const PeelBindData &>(other_p);
 		return steps == o.steps && max_k == o.max_k;
 	}
 };
@@ -147,10 +147,12 @@ static void PeelEndTokensExec(DataChunk &args, ExpressionState &state, Vector &r
 				maxk_val = maxk_data[mid];
 			}
 		}
-		if (steps_val < 0)
+		if (steps_val < 0) {
 			steps_val = 0;
-		if (maxk_val < 1)
+		}
+		if (maxk_val < 1) {
 			maxk_val = 1;
+		}
 
 		// Require a trie; if NULL → return NULL (spec)
 		const auto trid = trie_uvf.sel->get_index(i);
@@ -171,8 +173,9 @@ static void PeelEndTokensExec(DataChunk &args, ExpressionState &state, Vector &r
 		toks.reserve(le.length);
 		for (idx_t k = 0; k < le.length; ++k) {
 			const auto cidx = child_uvf.sel->get_index(le.offset + k);
-			if (!child_uvf.validity.RowIsValid(cidx))
+			if (!child_uvf.validity.RowIsValid(cidx)) {
 				continue;
+			}
 			toks.emplace_back(child_vals[cidx].GetString());
 		}
 
@@ -186,8 +189,9 @@ static void PeelEndTokensExec(DataChunk &args, ExpressionState &state, Vector &r
 		// ---- Iterative peel (up to steps) ----
 		// At each step, try k from min(max_k, n-1) .. 1; peel at first gain.
 		for (int s = 0; s < steps_val; ++s) {
-			if (toks.size() < 2)
+			if (toks.size() < 2) {
 				break;
+			}
 
 			const idx_t n = static_cast<idx_t>(toks.size());
 			idx_t try_maxk = std::min<idx_t>(static_cast<idx_t>(maxk_val), n - 1);
@@ -243,8 +247,9 @@ static void PeelEndTokensExec(DataChunk &args, ExpressionState &state, Vector &r
 
 	idx_t cur = 0;
 	for (idx_t i = 0; i < args.size(); ++i) {
-		if (FlatVector::IsNull(result, i))
+		if (FlatVector::IsNull(result, i)) {
 			continue;
+		}
 
 		const auto rid = list_uvf.sel->get_index(i);
 		auto le = list_entries[rid];
@@ -256,8 +261,9 @@ static void PeelEndTokensExec(DataChunk &args, ExpressionState &state, Vector &r
 		idx_t written = 0;
 		for (idx_t k = 0; k < le.length && written < out_len[i]; ++k) {
 			const auto cidx = child_uvf.sel->get_index(le.offset + k);
-			if (!child_uvf.validity.RowIsValid(cidx))
+			if (!child_uvf.validity.RowIsValid(cidx)) {
 				continue;
+			}
 			const auto s = child_vals[cidx].GetString();
 			child_out[cur + written] = StringVector::AddString(out_child, s);
 			written++;

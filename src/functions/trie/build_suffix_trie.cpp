@@ -25,8 +25,9 @@ static void InsertReversed(TrieNode &root, const vector<string> &toks) {
 	for (idx_t i = toks.size(); i > 0; --i) {
 		const string &tok = toks[i - 1]; // right→left
 		auto &child = n->next[tok];
-		if (!child)
+		if (!child) {
 			child = make_uniq<TrieNode>();
+		}
 		n = child.get();
 		n->cnt++;
 	}
@@ -76,8 +77,9 @@ static void StateUpdate(Vector inputs[], AggregateInputData &, idx_t input_count
 
 	for (idx_t i = 0; i < count; i++) {
 		const auto rid = list_data.sel->get_index(i);
-		if (!list_data.validity.RowIsValid(rid))
+		if (!list_data.validity.RowIsValid(rid)) {
 			continue;
+		}
 
 		auto *st = reinterpret_cast<BuildTrieState *>(state_ptrs[i]);
 		auto le = list_entries[rid];
@@ -86,8 +88,9 @@ static void StateUpdate(Vector inputs[], AggregateInputData &, idx_t input_count
 		toks.reserve(le.length);
 		for (idx_t k = 0; k < le.length; k++) {
 			const auto cidx = child_data.sel->get_index(le.offset + k);
-			if (!child_data.validity.RowIsValid(cidx))
+			if (!child_data.validity.RowIsValid(cidx)) {
 				continue;
+			}
 			toks.emplace_back(child_vals[cidx].GetString());
 		}
 		if (!toks.empty()) {
@@ -112,8 +115,9 @@ static void StateCombine(Vector &source, Vector &target, AggregateInputData &, i
 	for (idx_t i = 0; i < count; i++) {
 		auto *src = reinterpret_cast<BuildTrieState *>(src_ptrs[i]);
 		auto *dst = reinterpret_cast<BuildTrieState *>(dst_ptrs[i]);
-		if (!src || !src->root || !dst || !dst->root)
+		if (!src || !src->root || !dst || !dst->root) {
 			continue;
+		}
 		MergeTrie(*dst->root, *src->root);
 		delete src->root;
 		src->root = nullptr;

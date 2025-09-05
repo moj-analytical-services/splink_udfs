@@ -38,8 +38,9 @@ private:
 public:
 	CacheValue Get(CacheKey key) {
 		auto it = cache_map.find(key);
-		if (it == cache_map.end())
+		if (it == cache_map.end()) {
 			return nullptr;
+		}
 		lru_list.splice(lru_list.begin(), lru_list, it->second);
 		return it->second->value;
 	}

@@ -124,8 +124,9 @@ static void FormatAddressWithCountsExec(DataChunk &args, ExpressionState &state,
 		toks.reserve(le.length);
 		for (idx_t k = 0; k < le.length; ++k) {
 			const auto cidx = child_uvf.sel->get_index(le.offset + k);
-			if (!child_uvf.validity.RowIsValid(cidx))
+			if (!child_uvf.validity.RowIsValid(cidx)) {
 				continue;
+			}
 			toks.emplace_back(child_vals[cidx].GetString());
 		}
 
@@ -167,10 +168,11 @@ static void FormatAddressWithCountsExec(DataChunk &args, ExpressionState &state,
 					found = true;
 					break;
 				}
-				if (cmp < 0)
+				if (cmp < 0) {
 					hi = mid;
-				else
+				} else {
 					lo = mid + 1;
+				}
 			}
 			if (!found) {
 				path_broken = true;
@@ -195,15 +197,17 @@ static void FormatAddressWithCountsExec(DataChunk &args, ExpressionState &state,
 				c /= 10;
 			}
 			total_len += 3 + digits; // " (" + digits + ")"
-			if (j + 1 < n)
+			if (j + 1 < n) {
 				total_len += joiner.size();
+			}
 		}
 
 		std::string out_str;
 		out_str.reserve(total_len);
 		for (idx_t j = 0; j < n; ++j) {
-			if (j > 0)
+			if (j > 0) {
 				out_str += joiner;
+			}
 			out_str += toks[j];
 			out_str += " (";
 			out_str += std::to_string(counts[j]);
