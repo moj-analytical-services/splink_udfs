@@ -1,6 +1,7 @@
 #include "trie/suffix_trie.hpp"
 #include "duckdb/common/exception.hpp"
 #include <cstring>
+#include <utility>
 
 namespace duckdb {
 
@@ -111,7 +112,7 @@ std::unique_ptr<ParsedTrie> ParseQCK1(const string_t &blob) {
 		return nullptr;
 	}
 
-	return parsed;
+	return std::move(parsed);
 }
 
 uint32_t CountTail(const ParsedTrie &pt, const std::vector<std::string> &tail_reversed) {
@@ -137,8 +138,9 @@ uint32_t CountTail(const ParsedTrie &pt, const std::vector<std::string> &tail_re
 				lo = mid + 1;
 			}
 		}
-		if (!found)
+		if (!found) {
 			return 0;
+		}
 	}
 	return n->cnt;
 }
