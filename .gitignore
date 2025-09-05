@@ -1,3 +1,5 @@
+try_*
+bu_index/
 build
 .idea
 cmake-build-debug
@@ -6,3 +8,11 @@ duckdb_unittest_tempdir/
 testext
 test/python/__pycache__/
 .Rhistory
+scripts/java_dmeta/commons-codec-1.15.jar
+scripts/java_dmeta/dmetaphone_with_actual.csv
+scripts/java_dmeta/dmetaphone.csv
+.gitignore
+scripts/java_dmeta/DoubleMetaphoneExample.class
+scripts/java_dmeta/DoubleMetaphoneExample.java
+scripts/java_dmeta/dmetaphone.test
+scripts/java_dmeta/DoubleMetaphoneExample.java
