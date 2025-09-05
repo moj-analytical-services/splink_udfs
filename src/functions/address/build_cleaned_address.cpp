@@ -205,8 +205,9 @@ static void BuildCleanedAddressExec(DataChunk &args, ExpressionState &state, Vec
 
 		size_t total_len = 0;
 		if (keep_end > 0) {
-			for (idx_t j = 0; j < keep_end; ++j)
+			for (idx_t j = 0; j < keep_end; ++j) {
 				total_len += toks[j].size();
+			}
 			if (keep_end >= 2) {
 				total_len += (keep_end - 1) * joiner_str.size();
 			}
@@ -222,8 +223,8 @@ static void BuildCleanedAddressExec(DataChunk &args, ExpressionState &state, Vec
 		}
 
 		out[i] = StringVector::AddString(result, out_str);
-	}
-}
+	} // end for rows i
+} // end BuildCleanedAddressExec
 
 ScalarFunctionSet GetBuildCleanedAddressFunctionSet() {
 	ScalarFunctionSet set("build_cleaned_address");
