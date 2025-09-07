@@ -27,10 +27,10 @@ We’ll implement this in tiny steps so that after each step the code compiles a
 Progress
 
 - [x] 0) Rename parser to ParseQCK2
-- [ ] 1) Add minimal nav helpers
-- [ ] 2) Exact unique lookup → BIGINT
-- [ ] 3) Debug formatter with term/uprn
-- [ ] 4) Prefix option (allow_prefix)
+- [x] 1) Add minimal nav helpers
+- [x] 2) Exact unique lookup → BIGINT
+- [x] 3) Debug formatter with term/uprn
+- [x] 4) Prefix option (allow_prefix)
 - [ ] 5) Debug struct return
 - [ ] 6) SQL test snippets
 - [ ] 7) Perf/limits checks

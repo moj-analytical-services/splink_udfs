@@ -13,6 +13,8 @@ ScalarFunctionSet GetPeelEndTokensFunctionSet();
 ScalarFunctionSet GetBuildCleanedAddressFunctionSet();
 // Scalar: pretty-print tokens with suffix counts from the trie
 ScalarFunctionSet GetFormatAddressWithCountsFunctionSet();
+// Scalar: debug formatter along path with term/uprn metadata
+ScalarFunctionSet GetFormatAddressWithTermFunctionSet();
 // Scalar: exact unique match -> BIGINT UPRN or NULL
 ScalarFunctionSet GetFindAddressFromTrieFunctionSet();
 

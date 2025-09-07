@@ -22,7 +22,7 @@ static unique_ptr<FunctionLocalState> FindAddrInitLocal(ExpressionState &, const
     return make_uniq<FindAddrLocalState>();
 }
 
-// find_address_from_trie(tokens, trie) -> BIGINT (UPRN or NULL)
+// find_address_from_trie(tokens, trie [, allow_prefix=false]) -> BIGINT (UPRN or NULL)
 static void FindAddressExec(DataChunk &args, ExpressionState &state, Vector &result) {
     auto &local = ExecuteFunctionState::GetFunctionState(state)->Cast<FindAddrLocalState>();
 
@@ -75,23 +75,79 @@ static void FindAddressExec(DataChunk &args, ExpressionState &state, Vector &res
             toks.emplace_back(child_vals[cidx].GetString());
         }
 
-        const PNode *n = WalkExact(*trie_ptr, toks);
-        if (!n || n->term != 1 || n->uprn == 0) {
-            FlatVector::SetNull(result, i, true);
+        bool allow_prefix = false;
+        if (args.ColumnCount() >= 3) {
+            UnifiedVectorFormat pref_uvf;
+            Vector &pref_vec = args.data[2];
+            pref_vec.ToUnifiedFormat(args.size(), pref_uvf);
+            const auto pid = pref_uvf.sel->get_index(i);
+            if (pref_uvf.validity.RowIsValid(pid)) {
+                auto pref_vals = UnifiedVectorFormat::GetData<bool>(pref_uvf);
+                allow_prefix = pref_vals[pid];
+            }
+        }
+
+        // Walk path right→left. If allow_prefix is false, require full match and terminal==1.
+        // If allow_prefix is true, reset to root when a token is missing (skip unmatched leading tokens)
+        // and return the deepest unique terminal encountered while consuming the longest matching suffix.
+        const PNode *node = trie_ptr->root;
+        const PNode *deepest_unique = nullptr;
+        bool path_broken = false;
+
+        if (!allow_prefix) {
+            for (idx_t ti = toks.size(); ti > 0; --ti) {
+                node = FindChild(node, toks[ti - 1]);
+                if (!node) {
+                    path_broken = true;
+                    break;
+                }
+            }
+            if (!path_broken && node && node->term == 1 && node->uprn != 0) {
+                out[i] = static_cast<int64_t>(node->uprn);
+            } else {
+                FlatVector::SetNull(result, i, true);
+            }
+            continue;
+        } else {
+            // allow_prefix: skip non-matching leading tokens by resetting to root when a token misses
+            node = trie_ptr->root;
+            for (idx_t ti = toks.size(); ti > 0; --ti) {
+                const PNode *next = FindChild(node, toks[ti - 1]);
+                if (!next) {
+                    // reset and continue scanning earlier tokens (shorter suffix)
+                    node = trie_ptr->root;
+                    continue;
+                }
+                node = next;
+                if (node->term == 1 && node->uprn != 0) {
+                    deepest_unique = node;
+                }
+            }
+            if (deepest_unique) {
+                out[i] = static_cast<int64_t>(deepest_unique->uprn);
+            } else {
+                FlatVector::SetNull(result, i, true);
+            }
             continue;
         }
-        out[i] = static_cast<int64_t>(n->uprn);
     }
 }
 
 ScalarFunctionSet GetFindAddressFromTrieFunctionSet() {
     ScalarFunctionSet set("find_address_from_trie");
     const LogicalType tokens_type = LogicalType::LIST(LogicalType::VARCHAR);
-    ScalarFunction f({tokens_type, LogicalType::BLOB}, LogicalType::BIGINT, FindAddressExec);
-    f.init_local_state = FindAddrInitLocal;
-    set.AddFunction(f);
+    {
+        ScalarFunction f({tokens_type, LogicalType::BLOB}, LogicalType::BIGINT, FindAddressExec);
+        f.init_local_state = FindAddrInitLocal;
+        set.AddFunction(f);
+    }
+    {
+        // 3-arg variant with allow_prefix boolean
+        ScalarFunction f({tokens_type, LogicalType::BLOB, LogicalType::BOOLEAN}, LogicalType::BIGINT, FindAddressExec);
+        f.init_local_state = FindAddrInitLocal;
+        set.AddFunction(f);
+    }
     return set;
 }
 
 } // namespace duckdb
-

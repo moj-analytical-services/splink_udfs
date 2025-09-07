@@ -32,10 +32,13 @@ sql = """
       (2, ['12','HIGH','STREET','LONDON']),
       (3, ['10','HIGH','ROAD','LONDON'])
   ) canon(uprn, toks))
-  SELECT find_address_from_trie(['120','HIGH','STREET','LONDON'], trie) AS uprn FROM t;
+  SELECT
+    format_address_with_term(['10','HIGH','STREET','LONDON'], trie, ' -> ') AS dbg_exact,
+    format_address_with_term(['120','HIGH','STREET','LONDON'], trie, ' -> ') AS dbg_partial
+  FROM t;
 
 """
-con.sql(sql).show()
+con.sql(sql).show(max_width=10000)
 
 
 rows = [

@@ -20,6 +20,8 @@ set(EXTENSION_SOURCES
   src/functions/trie/peel_end_tokens.cpp
   src/functions/address/build_cleaned_address.cpp
   src/functions/address/format_address_with_counts.cpp
+  src/functions/address/format_address_with_term.cpp
+  src/functions/address/find_address_from_trie.cpp
   src/common/trie/suffix_trie.cpp
   src/common/trie/trie_cache_utils.cpp
   src/common/trie/trie_nav.cpp
