@@ -1,0 +1,99 @@
+# name: test/sql/find_address_from_trie.test
+# description: smoke tests for find_address_from_trie (exact and allow_prefix)
+# group: [sql]
+
+require splink_udfs
+
+# Build a tiny trie with three addresses
+query I
+WITH t AS (
+  SELECT build_suffix_trie(uprn, toks) AS trie FROM (
+    VALUES
+      (1, ['10','HIGH','STREET','LONDON']),
+      (2, ['12','HIGH','STREET','LONDON']),
+      (3, ['10','HIGH','ROAD','LONDON'])
+  ) canon(uprn, toks)
+)
+SELECT typeof(trie) FROM t;
+----
+BLOB
+
+# Exact match returns UPRN=1
+query I
+WITH t AS (
+  SELECT build_suffix_trie(uprn, toks) AS trie FROM (
+    VALUES
+      (1, ['10','HIGH','STREET','LONDON']),
+      (2, ['12','HIGH','STREET','LONDON']),
+      (3, ['10','HIGH','ROAD','LONDON'])
+  ) canon(uprn, toks)
+)
+SELECT find_address_from_trie(['10','HIGH','STREET','LONDON'], trie) FROM t;
+----
+1
+
+# Non-terminal (missing house number) returns NULL
+query I
+WITH t AS (
+  SELECT build_suffix_trie(uprn, toks) AS trie FROM (
+    VALUES
+      (1, ['10','HIGH','STREET','LONDON']),
+      (2, ['12','HIGH','STREET','LONDON'])
+  ) canon(uprn, toks)
+)
+SELECT find_address_from_trie(['HIGH','STREET','LONDON'], trie) FROM t;
+----
+NULL
+
+# Wrong token returns NULL
+query I
+WITH t AS (
+  SELECT build_suffix_trie(uprn, toks) AS trie FROM (
+    VALUES (1, ['10','HIGH','STREET','LONDON'])
+  ) canon(uprn, toks)
+)
+SELECT find_address_from_trie(['10','HIGH','STREET','PARIS'], trie) FROM t;
+----
+NULL
+
+# allow_prefix=true accepts deepest unique terminal on the path
+query II
+WITH t AS (
+  SELECT build_suffix_trie(uprn, toks) AS trie FROM (
+    VALUES (1, ['10','HIGH','STREET','LONDON'])
+  ) canon(uprn, toks)
+)
+SELECT
+  find_address_from_trie(['10','HIGH','STREET','LONDON','UK'], trie, true)  AS prefix_ok,
+  find_address_from_trie(['10','HIGH','STREET','LONDON','UK'], trie, false) AS prefix_fail
+FROM t;
+----
+1	NULL
+
+# allow_prefix handles trailing non-canonical tokens after a valid address
+query II
+WITH t AS (
+  SELECT build_suffix_trie(uprn, toks) AS trie FROM (
+    VALUES (1, ['10','HIGH','STREET','LONDON'])
+  ) canon(uprn, toks)
+)
+SELECT
+  find_address_from_trie(['10','HIGH','STREET','LONDON','HERTFORDSHIRE','ENGLAND'], trie, true)  AS prefix_ok,
+  find_address_from_trie(['10','HIGH','STREET','LONDON','HERTFORDSHIRE','ENGLAND'], trie, false) AS prefix_fail
+FROM t;
+----
+1	NULL
+
+# allow_prefix handles leading non-canonical tokens before a valid address
+query II
+WITH t AS (
+  SELECT build_suffix_trie(uprn, toks) AS trie FROM (
+    VALUES (1, ['10','HIGH','STREET','LONDON'])
+  ) canon(uprn, toks)
+)
+SELECT
+  find_address_from_trie(['SUES','NAILS','10','HIGH','STREET','LONDON'], trie, true)  AS prefix_ok,
+  find_address_from_trie(['SUES','NAILS','10','HIGH','STREET','LONDON'], trie, false) AS prefix_fail
+FROM t;
+----
+1	NULL
