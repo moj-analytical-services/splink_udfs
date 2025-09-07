@@ -7,6 +7,7 @@
 // shared components
 #include "trie/suffix_trie.hpp"
 #include "trie/suffix_trie_cache.hpp"
+#include "trie/trie_cache_utils.hpp"
 
 #include <string>
 #include <utility>
@@ -26,24 +27,7 @@ static unique_ptr<FunctionLocalState> FormatCountsInitLocalState(ExpressionState
 	return make_uniq<FormatCountsLocalState>();
 }
 
-// Helper: resolve (and cache) a parsed trie for a given blob
-static inline std::shared_ptr<const ParsedTrie> ResolveTrieFromBlob(FormatCountsLocalState &local,
-                                                                    const string_t &blob) {
-	auto data_ptr = reinterpret_cast<const uint8_t *>(blob.GetDataUnsafe());
-	size_t data_len = static_cast<size_t>(blob.GetSize());
-	uint64_t key = FNV1aHash64(data_ptr, data_len);
-	auto cached = local.cache.Get(key);
-	if (!cached) {
-		auto parsed = ParseQCK1(blob);
-		if (!parsed) {
-			return nullptr;
-		}
-		cached = std::shared_ptr<const ParsedTrie>(parsed.release());
-		local.cache.Put(key, cached);
-		local.parse_count++;
-	}
-	return cached;
-}
+// Parsing now centralized in trie_cache_utils
 
 // format_address_with_counts(tokens, trie, joiner=' -> ')
 // Example: ['40','AVERILL','STREET','LONDON']
@@ -112,7 +96,7 @@ static void FormatAddressWithCountsExec(DataChunk &args, ExpressionState &state,
 			}
 		}
 
-		auto trie_ptr = ResolveTrieFromBlob(local, trie_vals[trid]);
+		auto trie_ptr = GetOrParseTrie(local.cache, trie_vals[trid]);
 		if (!trie_ptr || !trie_ptr->root) {
 			FlatVector::SetNull(result, i, true);
 			continue;
