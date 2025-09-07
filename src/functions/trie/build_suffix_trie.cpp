@@ -46,6 +46,7 @@ static void InsertReversed(TrieNode &root, const vector<string> &toks, uint64_t 
 // ─────────────────────────────────────────────
 struct BuildTrieState {
 	TrieNode *root;
+	idx_t seq; // synthetic UPRN generator for compat overload
 };
 
 static idx_t StateSize(const AggregateFunction &) {
@@ -55,6 +56,7 @@ static idx_t StateSize(const AggregateFunction &) {
 static void StateInit(const AggregateFunction &, data_ptr_t state) {
 	auto *st = reinterpret_cast<BuildTrieState *>(state);
 	st->root = new TrieNode();
+	st->seq = 1;
 }
 
 // Per-state destructor: called once per state object
@@ -67,6 +69,46 @@ static void TrieStateDestructor(Vector &state, AggregateInputData &, idx_t count
 			st->root = nullptr;
 		}
 	}
+}
+
+// Back-compat update: generate synthetic UPRNs per group when only tokens are provided
+static void StateUpdateTokensOnly(Vector inputs[], AggregateInputData &, idx_t input_count, Vector &state, idx_t count) {
+    D_ASSERT(input_count == 1);
+    auto &list_vec = inputs[0];
+
+    UnifiedVectorFormat list_data;
+    list_vec.ToUnifiedFormat(count, list_data);
+    auto state_ptrs = FlatVector::GetData<data_ptr_t>(state);
+
+    auto &child_vec = ListVector::GetEntry(list_vec);
+    UnifiedVectorFormat child_data;
+    child_vec.ToUnifiedFormat(ListVector::GetListSize(list_vec), child_data);
+    auto child_vals = UnifiedVectorFormat::GetData<string_t>(child_data);
+    auto list_entries = ListVector::GetData(list_vec);
+
+    for (idx_t i = 0; i < count; i++) {
+        const auto rid = list_data.sel->get_index(i);
+        if (!list_data.validity.RowIsValid(rid)) {
+            continue;
+        }
+
+        auto *st = reinterpret_cast<BuildTrieState *>(state_ptrs[i]);
+        auto le = list_entries[rid];
+
+        vector<string> toks;
+        toks.reserve(le.length);
+        for (idx_t k = 0; k < le.length; k++) {
+            const auto cidx = child_data.sel->get_index(le.offset + k);
+            if (!child_data.validity.RowIsValid(cidx)) {
+                continue;
+            }
+            toks.emplace_back(child_vals[cidx].GetString());
+        }
+        if (!toks.empty()) {
+            const auto uprn_val = static_cast<uint64_t>(st->seq++);
+            InsertReversed(*st->root, toks, uprn_val);
+        }
+    }
 }
 
 static void StateUpdate(Vector inputs[], AggregateInputData &, idx_t input_count, Vector &state, idx_t count) {
@@ -236,6 +278,13 @@ AggregateFunctionSet GetBuildSuffixTrieAggregateSet() {
 	fn.destructor = TrieStateDestructor;
 
 	set.AddFunction(fn);
+
+	// Back-compat overload: generate synthetic UPRNs
+	AggregateFunction fn_tokens_only({LogicalType::LIST(LogicalType::VARCHAR)}, LogicalType::BLOB, StateSize, StateInit,
+	                                StateUpdateTokensOnly, StateCombine, StateFinalize,
+	                                FunctionNullHandling::DEFAULT_NULL_HANDLING);
+	fn_tokens_only.destructor = TrieStateDestructor;
+	set.AddFunction(fn_tokens_only);
 
 	return set;
 }

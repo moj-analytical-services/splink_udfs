@@ -24,6 +24,10 @@ const PNode *FindChild(const PNode *node, const std::string &token) {
     return nullptr;
 }
 
+const PNode *FindChild(const PNode &node, const std::string &token) {
+    return FindChild(&node, token);
+}
+
 bool HasChild(const PNode *node, const std::string &token) {
     return FindChild(node, token) != nullptr;
 }
@@ -54,5 +58,18 @@ void PrecomputeSuffixCounts(const ParsedTrie &pt, const std::vector<std::string>
     }
 }
 
-} // namespace duckdb
+const PNode *WalkExact(const ParsedTrie &pt, const std::vector<std::string> &toks) {
+    const PNode *n = pt.root;
+    if (n == nullptr) {
+        return nullptr;
+    }
+    for (const auto &t : toks) {
+        n = FindChild(n, t);
+        if (n == nullptr) {
+            return nullptr;
+        }
+    }
+    return n;
+}
 
+} // namespace duckdb
