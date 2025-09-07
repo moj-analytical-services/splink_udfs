@@ -8,6 +8,7 @@
 #include "trie/suffix_trie.hpp"
 #include "trie/suffix_trie_cache.hpp"
 #include "trie/trie_cache_utils.hpp"
+#include "trie/trie_nav.hpp"
 
 #include <string>
 #include <utility>
@@ -120,53 +121,9 @@ static void FormatAddressWithCountsExec(DataChunk &args, ExpressionState &state,
 			continue;
 		}
 
-		// Build reversed tokens once
-		rev_toks.clear();
-		rev_toks.reserve(n);
-		for (idx_t k = 0; k < n; ++k) {
-			rev_toks.emplace_back(toks[n - 1 - k]);
-		}
 
-		// Walk the trie once along rev_toks to get counts for each suffix:
-		// For step t (0..n-1) on rev_toks: we advance one token deeper; the node's cnt is the suffix count
-		// Map that to the forward index: idx = n - 1 - t.
-		counts.assign(n, 0);
-		const PNode *node = trie_ptr->root;
-		bool path_broken = false;
-		for (idx_t t = 0; t < n; ++t) {
-			if (path_broken || !node) {
-				// Once the path is broken, all remaining suffixes are 0
-				break;
-			}
-			const auto &kids = node->kids;
-			const std::string &tok = rev_toks[t];
-
-			// binary search in sorted children
-			size_t lo = 0, hi = kids.size();
-			bool found = false;
-			while (lo < hi) {
-				size_t mid = (lo + hi) / 2;
-				int cmp = tok.compare(kids[mid].first);
-				if (cmp == 0) {
-					node = kids[mid].second;
-					found = true;
-					break;
-				}
-				if (cmp < 0) {
-					hi = mid;
-				} else {
-					lo = mid + 1;
-				}
-			}
-			if (!found) {
-				path_broken = true;
-				break;
-			}
-			// suffix starting at index idx has count = node->cnt
-			const idx_t idx = n - 1 - t;
-			counts[idx] = node->cnt;
-		}
-		// Any earlier indices not reached remain 0 (unknown path => 0)
+		// Compute counts per suffix using shared helper
+		PrecomputeSuffixCounts(*trie_ptr, toks, counts);
 
 		// Compose "TOKEN (count)" joined by joiner
 		// Pre-size output buffer for fewer reallocations

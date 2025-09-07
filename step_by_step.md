@@ -512,6 +512,6 @@ No further format or API churn will be required.
 - [x] S4–S5: All existing functions parse via the helper; prior SQL still works with the QCK2 trie.
 - [x] S7: No stray QCK1 constants or code paths; full build succeeds.
 - [ ] S8: All persisted tries are rebuilt; spot-checks succeed.
-- [ ] S9–S10: Optional helper refactors; builds stay green.
+- [x] S9–S10: Optional helper refactors; builds stay green.
 
 If you’d like, I can turn any of the steps above into exact patches (minimal diffs) for each file.

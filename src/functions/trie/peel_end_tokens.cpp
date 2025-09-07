@@ -8,6 +8,7 @@
 // shared components
 #include "trie/suffix_trie.hpp"
 #include "trie/suffix_trie_cache.hpp"
+#include "trie/peel_utils.hpp"
 #include "trie/trie_cache_utils.hpp"
 
 #include <string>
@@ -102,15 +103,13 @@ static void PeelEndTokensExec(DataChunk &args, ExpressionState &state, Vector &r
 	static constexpr int32_t DEFAULT_STEPS = 4;
 	static constexpr int32_t DEFAULT_MAXK = 2;
 
+
 	// First pass: compute final kept length per row
 	std::vector<idx_t> out_len(args.size(), 0);
 	idx_t total_elems = 0;
 
 	// Scratch buffers reused across rows
 	std::vector<std::string> toks;
-	std::vector<std::string> tail_rev;   // reversed tail_k
-	std::vector<std::string> anchor_vec; // size 1 for CountTail({anchor})
-	anchor_vec.reserve(1);
 
 	for (idx_t i = 0; i < args.size(); ++i) {
 		const auto rid = list_uvf.sel->get_index(i);
@@ -168,62 +167,9 @@ static void PeelEndTokensExec(DataChunk &args, ExpressionState &state, Vector &r
 			toks.emplace_back(child_vals[cidx].GetString());
 		}
 
-		// If no trie or too few tokens, nothing to peel
-		if (!trie_ptr || !trie_ptr->root || toks.size() < 2 || steps_val == 0) {
-			out_len[i] = static_cast<idx_t>(toks.size());
-			total_elems += out_len[i];
-			continue;
-		}
 
-		// ---- Iterative peel (up to steps) ----
-		// At each step, try k from min(max_k, n-1) .. 1; peel at first gain.
-		for (int s = 0; s < steps_val; ++s) {
-			if (toks.size() < 2) {
-				break;
-			}
-
-			const idx_t n = static_cast<idx_t>(toks.size());
-			idx_t try_maxk = std::min<idx_t>(static_cast<idx_t>(maxk_val), n - 1);
-
-			bool peeled_this_step = false;
-
-			for (idx_t k = try_maxk; k >= 1; --k) {
-				// anchor at n-k-1, tail_k = toks[n-k..n-1]
-				const idx_t anchor_idx = n - k - 1;
-				// (anchor_idx >= 0 guaranteed by k <= n-1)
-				const std::string &anchor = toks[anchor_idx];
-
-				// CountTail({anchor})
-				anchor_vec.clear();
-				anchor_vec.emplace_back(anchor);
-				const uint32_t c_anchor = CountTail(*trie_ptr, anchor_vec);
-
-				// reversed tail_k : toks[n-1]..toks[n-k]
-				tail_rev.clear();
-				tail_rev.reserve(k);
-				for (idx_t t = 0; t < k; ++t) {
-					tail_rev.emplace_back(toks[n - 1 - t]);
-				}
-
-				// Build combo_rev = reversed(tail_k) + [anchor]
-				// Reuse tail_rev by pushing anchor at the end
-				tail_rev.emplace_back(anchor);
-				const uint32_t c_combo = CountTail(*trie_ptr, tail_rev);
-				tail_rev.pop_back(); // restore tail_rev (not strictly needed after this)
-
-				if (c_anchor > c_combo) {
-					// Peel k tokens from the end
-					toks.resize(n - k);
-					peeled_this_step = true;
-					break;
-				}
-			}
-
-			if (!peeled_this_step) {
-				break; // stable
-			}
-		}
-
+		// Peel via shared helper (identical heuristic)
+		PeelEndTokensInPlace(toks, *trie_ptr, steps_val, maxk_val);
 		out_len[i] = static_cast<idx_t>(toks.size());
 		total_elems += out_len[i];
 	}
