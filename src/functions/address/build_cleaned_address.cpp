@@ -72,11 +72,15 @@ static void BuildCleanedAddressExec(DataChunk &args, ExpressionState &state, Vec
 	thr_vec.ToUnifiedFormat(args.size(), thr_uvf);
 	auto thr_vals = UnifiedVectorFormat::GetData<int32_t>(thr_uvf);
 
-	// Joiner
-	Vector &join_vec = args.data[3];
-	UnifiedVectorFormat join_uvf;
-	join_vec.ToUnifiedFormat(args.size(), join_uvf);
-	auto join_vals = UnifiedVectorFormat::GetData<string_t>(join_uvf);
+    // Optional joiner (4th arg). If absent, default to single space.
+    const bool has_joiner = args.ColumnCount() >= 4;
+    UnifiedVectorFormat join_uvf;
+    const string_t *join_vals = nullptr;
+    if (has_joiner) {
+        Vector &join_vec = args.data[3];
+        join_vec.ToUnifiedFormat(args.size(), join_uvf);
+        join_vals = UnifiedVectorFormat::GetData<string_t>(join_uvf);
+    }
 
 	auto out = FlatVector::GetData<string_t>(result);
 
@@ -111,14 +115,14 @@ static void BuildCleanedAddressExec(DataChunk &args, ExpressionState &state, Vec
 			threshold = 0; // clamp
 		}
 
-		// Joiner: if NULL, treat as single space (typical)
-		std::string joiner_str;
-		const auto jid = join_uvf.sel->get_index(i);
-		if (join_uvf.validity.RowIsValid(jid)) {
-			joiner_str = join_vals[jid].GetString();
-		} else {
-			joiner_str = " ";
-		}
+        // Joiner: default to single space when absent or NULL
+        std::string joiner_str = " ";
+        if (has_joiner) {
+            const auto jid = join_uvf.sel->get_index(i);
+            if (join_uvf.validity.RowIsValid(jid)) {
+                joiner_str = join_vals[jid].GetString();
+            }
+        }
 
 		std::shared_ptr<const ParsedTrie> trie_ptr = GetOrParseTrie(local_state.cache, trie_vals[trid]);
 		// Treat parse failures as NULL too (garbled BLOB == unusable)

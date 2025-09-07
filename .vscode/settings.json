@@ -1,7 +1,17 @@
 {
-    "search.exclude": {
-        "**/duckdb": true,
-        "**/extension-ci-tools": true,
-        "**/vcpkg": true
+    "files.associations": {
+        "array": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "vector": "cpp"
     }
-}
+} // {
+//     "search.exclude": {
+//         "**/duckdb": true,
+//         "**/extension-ci-tools": true,
+//         "**/vcpkg": true
+//     },
+//     "files.associations": {
+//         "locale": "cpp"
+//     }
+// }
