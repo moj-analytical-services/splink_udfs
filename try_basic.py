@@ -25,6 +25,18 @@ ext_path = os.path.abspath(
 con = duckdb.connect(":memory:", config={"allow_unsigned_extensions": "true"})
 con.load_extension(ext_path)
 
+sql = """
+  WITH t AS (SELECT build_suffix_trie(uprn, toks) AS trie FROM (
+    VALUES
+      (1, ['10','HIGH','STREET','LONDON']),
+      (2, ['12','HIGH','STREET','LONDON']),
+      (3, ['10','HIGH','ROAD','LONDON'])
+  ) canon(uprn, toks))
+  SELECT find_address_from_trie(['120','HIGH','STREET','LONDON'], trie) AS uprn FROM t;
+
+"""
+con.sql(sql).show()
+
 
 rows = [
     ("LOVE LANE KINGS LANGLEY", "WD4 9HW"),
@@ -220,7 +232,6 @@ def print_trie_pretty(
     min_count=1,  # hide subtrees with count < min_count
     max_children=None,  # show only top-N children by count per node
 ):
-
     def fmt_label(tok, node, parent_cnt):
         cnt = node.get("cnt", 0)
         term = node.get("term", 0)

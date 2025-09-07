@@ -63,8 +63,9 @@ const PNode *WalkExact(const ParsedTrie &pt, const std::vector<std::string> &tok
     if (n == nullptr) {
         return nullptr;
     }
-    for (const auto &t : toks) {
-        n = FindChild(n, t);
+    // Our trie is a reversed-suffix trie: children from rightmost token first
+    for (idx_t i = toks.size(); i > 0; --i) {
+        n = FindChild(n, toks[i - 1]);
         if (n == nullptr) {
             return nullptr;
         }
