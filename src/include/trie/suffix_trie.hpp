@@ -11,12 +11,17 @@ namespace duckdb {
 // ---- On-disk format constants ----
 static constexpr uint32_t QCK1_MAGIC = 0x314B4351u; // 'QCK1'
 static constexpr uint8_t QCK1_FLAGS_EXPECTED = 0x00;
+static constexpr uint32_t QCK2_MAGIC = 0x324B4351u; // 'QCK2'
 
 // ---- Parsed trie structures (immutable) ----
 struct PNode {
 	uint32_t cnt = 0;
 	// Children are kept sorted lexicographically by token
 	std::vector<std::pair<std::string, PNode *>> kids;
+
+	// Terminal metadata for QCK2
+	uint32_t term = 0; // number of addresses that end here
+	uint64_t uprn = 0; // valid when term == 1
 };
 
 struct ParsedTrie {
