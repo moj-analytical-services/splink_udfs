@@ -31,7 +31,7 @@ Progress
 - [x] 2) Exact unique lookup → BIGINT
 - [x] 3) Debug formatter with term/uprn
 - [x] 4) Prefix option (allow_prefix)
-- [ ] 5) Debug struct return
+- [x] 5) Debug struct return
 - [ ] 6) SQL test snippets
 - [ ] 7) Perf/limits checks
 - [ ] 8) Docs/examples

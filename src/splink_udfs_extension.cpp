@@ -221,6 +221,7 @@ static void LoadInternal(DatabaseInstance &instance) {
 	ExtensionUtil::RegisterFunction(instance, GetFormatAddressWithCountsFunctionSet());
 	ExtensionUtil::RegisterFunction(instance, GetFormatAddressWithTermFunctionSet());
 	ExtensionUtil::RegisterFunction(instance, GetFindAddressFromTrieFunctionSet());
+	ExtensionUtil::RegisterFunction(instance, GetFindAddressFromTrieDbgFunctionSet());
 }
 
 void SplinkUdfsExtension::Load(DuckDB &db) {

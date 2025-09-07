@@ -17,5 +17,7 @@ ScalarFunctionSet GetFormatAddressWithCountsFunctionSet();
 ScalarFunctionSet GetFormatAddressWithTermFunctionSet();
 // Scalar: exact unique match -> BIGINT UPRN or NULL
 ScalarFunctionSet GetFindAddressFromTrieFunctionSet();
+// Debug struct variant: uprn/matched_len/is_terminal/ambiguous
+ScalarFunctionSet GetFindAddressFromTrieDbgFunctionSet();
 
 } // namespace duckdb
