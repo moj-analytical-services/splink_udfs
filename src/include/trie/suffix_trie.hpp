@@ -9,8 +9,6 @@
 namespace duckdb {
 
 // ---- On-disk format constants ----
-static constexpr uint32_t QCK1_MAGIC = 0x314B4351u; // 'QCK1'
-static constexpr uint8_t QCK1_FLAGS_EXPECTED = 0x00;
 static constexpr uint32_t QCK2_MAGIC = 0x324B4351u; // 'QCK2'
 
 // ---- Parsed trie structures (immutable) ----
@@ -31,7 +29,7 @@ struct ParsedTrie {
 };
 
 // ---- Parser ----
-// Returns nullptr if blob is not a valid QCK1 trie.
+// Returns nullptr if blob is not a valid QCK2 trie.
 std::unique_ptr<ParsedTrie> ParseQCK1(const string_t &blob);
 
 // ---- Lookup ----

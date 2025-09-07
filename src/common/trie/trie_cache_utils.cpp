@@ -12,7 +12,7 @@ std::shared_ptr<const ParsedTrie> GetOrParseTrie(TrieCache &cache, const string_
         return got;
     }
 
-    auto parsed = ParseQCK1(blob); // expects QCK2 under the hood now
+    auto parsed = ParseQCK1(blob); // parses QCK2 under the hood
     if (!parsed) {
         return nullptr;
     }
@@ -22,4 +22,3 @@ std::shared_ptr<const ParsedTrie> GetOrParseTrie(TrieCache &cache, const string_
 }
 
 } // namespace duckdb
-

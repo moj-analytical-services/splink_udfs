@@ -510,7 +510,7 @@ No further format or API churn will be required.
 - [x] S2: Parser enforces `QCK2_MAGIC`; compiles.
 - [x] S3: Builder takes `(uprn, tokens)` and writes QCK2; round-trip SQL shows expected counts.
 - [x] S4–S5: All existing functions parse via the helper; prior SQL still works with the QCK2 trie.
-- [ ] S7: No stray QCK1 references; full build succeeds.
+- [x] S7: No stray QCK1 constants or code paths; full build succeeds.
 - [ ] S8: All persisted tries are rebuilt; spot-checks succeed.
 - [ ] S9–S10: Optional helper refactors; builds stay green.
 
