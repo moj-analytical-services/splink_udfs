@@ -24,6 +24,18 @@ We’ll implement this in tiny steps so that after each step the code compiles a
 
 # Step-by-step plan (small, self-contained, verifiable)
 
+Progress
+
+- [x] 0) Rename parser to ParseQCK2
+- [ ] 1) Add minimal nav helpers
+- [ ] 2) Exact unique lookup → BIGINT
+- [ ] 3) Debug formatter with term/uprn
+- [ ] 4) Prefix option (allow_prefix)
+- [ ] 5) Debug struct return
+- [ ] 6) SQL test snippets
+- [ ] 7) Perf/limits checks
+- [ ] 8) Docs/examples
+
 ## 0) Housekeeping: rename the parser to QCK2 (if you haven’t already)
 
 **Goal:** Eliminate legacy naming to avoid confusion.

@@ -12,7 +12,7 @@ std::shared_ptr<const ParsedTrie> GetOrParseTrie(TrieCache &cache, const string_
         return got;
     }
 
-    auto parsed = ParseQCK1(blob); // parses QCK2 under the hood
+    auto parsed = ParseQCK2(blob);
     if (!parsed) {
         return nullptr;
     }

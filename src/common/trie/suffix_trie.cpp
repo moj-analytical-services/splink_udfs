@@ -92,7 +92,7 @@ static bool ParseNodeQCK2(ParseCursor &c, ParsedTrie &out, PNode *&node_out) {
     return true;
 }
 
-std::unique_ptr<ParsedTrie> ParseQCK1(const string_t &blob) {
+std::unique_ptr<ParsedTrie> ParseQCK2(const string_t &blob) {
 	auto data_ptr = reinterpret_cast<const uint8_t *>(blob.GetDataUnsafe());
 	auto data_len = blob.GetSize();
 	if (data_len < 5) {
