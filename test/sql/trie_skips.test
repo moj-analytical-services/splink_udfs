@@ -1,0 +1,73 @@
+# name: test/sql/trie_skips.test
+# description: tests for greedy internal token skips in trie matching
+# group: [sql]
+
+require splink_udfs
+
+# Strict match without skips should fail; with one supported skip should succeed
+query II
+WITH canon(uprn, toks) AS (
+  VALUES
+    (101, ['10','LOVE','LANE','KINGS','LANGLEY']),
+    (111, ['11','LOVE','LANE','KINGS','LANGLEY'])
+),
+t AS (
+  SELECT build_suffix_trie(uprn, toks) AS trie FROM canon
+)
+SELECT
+  find_address_from_trie(['10','LOVE','APT','LANE','KINGS','LANGLEY'], trie, false)    AS strict_no_skip,
+  find_address_from_trie(['10','LOVE','APT','LANE','KINGS','LANGLEY'], trie, false, 1) AS strict_skip1
+FROM t;
+----
+NULL	101
+
+# Classifier status/uprn reflect EXACT after a single supported skip
+query II
+WITH canon(uprn, toks) AS (
+  VALUES
+    (101, ['10','LOVE','LANE','KINGS','LANGLEY']),
+    (111, ['11','LOVE','LANE','KINGS','LANGLEY'])
+),
+t AS (
+  SELECT build_suffix_trie(uprn, toks) AS trie FROM canon
+)
+SELECT
+  (find_address_from_trie_classify(['10','LOVE','APT','LANE','KINGS','LANGLEY'], trie, false, 1)).status AS status,
+  (find_address_from_trie_classify(['10','LOVE','APT','LANE','KINGS','LANGLEY'], trie, false, 1)).uprn   AS uprn
+FROM t;
+----
+EXACT	101
+
+# Unsupported skip: lookahead token does not continue the path -> AMBIGUOUS (multiple candidates under last match)
+query II
+WITH canon(uprn, toks) AS (
+  VALUES
+    (101, ['10','LOVE','LANE','KINGS','LANGLEY']),
+    (111, ['11','LOVE','LANE','KINGS','LANGLEY'])
+),
+t AS (
+  SELECT build_suffix_trie(uprn, toks) AS trie FROM canon
+)
+SELECT
+  (find_address_from_trie_classify(['10','LOVE','APT','WRONG','KINGS','LANGLEY'], trie, false, 1)).status AS status,
+  find_address_from_trie(['10','LOVE','APT','WRONG','KINGS','LANGLEY'], trie, false, 1)                  AS uprn
+FROM t;
+----
+AMBIGUOUS	NULL
+
+# Debug matched_len shows benefit of skip=1 (3 -> 5)
+query II
+WITH canon(uprn, toks) AS (
+  VALUES
+    (101, ['10','LOVE','LANE','KINGS','LANGLEY']),
+    (111, ['11','LOVE','LANE','KINGS','LANGLEY'])
+),
+t AS (
+  SELECT build_suffix_trie(uprn, toks) AS trie FROM canon
+)
+SELECT
+  (find_address_from_trie_dbg(['10','LOVE','APT','LANE','KINGS','LANGLEY'], trie, false, 0)).matched_len AS mlen0,
+  (find_address_from_trie_dbg(['10','LOVE','APT','LANE','KINGS','LANGLEY'], trie, false, 1)).matched_len AS mlen1
+FROM t;
+----
+3	5
