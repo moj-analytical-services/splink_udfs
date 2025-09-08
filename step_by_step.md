@@ -18,7 +18,7 @@ This should:
 
 ## Step-by-step implementation plan
 
-### 1) Add a small reusable matcher helper (declaration)
+### 1) Add a small reusable matcher helper (declaration) ✓
 
 **Change:** Create a reusable API that performs a right→left walk with greedy lookahead-based skips.
 
@@ -45,7 +45,7 @@ GreedySkipMatchResult GreedyWalkWithSkips(
 
 ---
 
-### 2) Implement the helper with **lookahead-based skip** (core feature)
+### 2) Implement the helper with **lookahead-based skip** (core feature) ✓
 
 **Change:** Implement greedy skip: on mismatch, if `skips_left>0` and `next` token exists as a child of the **current node**, consume the skip and advance with that next token. Otherwise (no lookahead support), behave as before (break or reset depending on `allow_prefix`).
 
@@ -188,7 +188,7 @@ GreedySkipMatchResult GreedyWalkWithSkips(
 
 ---
 
-### 3) Refactor `find_address_from_trie_classify` to use the helper
+### 3) Refactor `find_address_from_trie_classify` to use the helper ✓
 
 **Change:** Replace its hand-rolled loops with `GreedyWalkWithSkips(...)`. Keep the **same output schema** (status/uprn/etc.) so downstream code stays unchanged.
 
@@ -236,7 +236,7 @@ if (consumed_all) {
 
 ---
 
-### 4) Add `max_skips` to the simple finder (new overload, non-breaking)
+### 4) Add `max_skips` to the simple finder (new overload, non-breaking) ✓
 
 **Change:** Add a **4-arg overload** to `find_address_from_trie(tokens, trie, allow_prefix, max_skips)` and route both the 2-arg and 3-arg variants to the helper with `max_skips=0`.
 
@@ -290,7 +290,7 @@ if (mr.matched_len == (int32_t)toks.size()
 
 ---
 
-### 5) Add `max_skips` to the debug function (new overload, non-breaking)
+### 5) Add `max_skips` to the debug function (new overload, non-breaking) ✓
 
 **Change:** Mirror the helper usage and expose the 4-arg overload. Keep the struct shape (uprn, matched\_len, is\_terminal, ambiguous).
 
