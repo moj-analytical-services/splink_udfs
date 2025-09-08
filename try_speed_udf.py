@@ -88,7 +88,7 @@ from pc_cleaned
 os_addresses = con.sql(sql)
 os_addresses.create("os_addresses")
 
-
+t0 = time.perf_counter()
 sql = """
 SELECT postcode_group, build_suffix_trie(uprn, tokens) AS trie
 FROM os_addresses
@@ -96,7 +96,8 @@ GROUP BY postcode_group;
 """
 trie = con.sql(sql)
 trie.create("trie")
-
+dt = time.perf_counter() - t0
+print(f"{dt:8.3f} s")
 
 t0 = time.perf_counter()
 sql = """
@@ -127,3 +128,41 @@ comparison.create("comparison")
 con.table("comparison").show(max_width=10000, max_rows=5)
 c = con.table("comparison").count("*").fetchone()[0]
 print(f"Number of differences: {c:,}")
+
+
+con.execute("drop table if exists grouped_comparison")
+sql = """
+with myt as (
+    select
+        array_to_string(f.tokens, ' ') as addr_found,
+        o.uprn,
+        array_to_string(o.tokens, ' ') as add_os,
+        case
+            when o.uprn is null then 'no match'
+            when array_to_string(o.tokens, ' ') = array_to_string(f.tokens, ' ') then 'exact match'
+            else 'fuzzy match'
+        end as match_type
+    from found f
+    left join os_addresses o on o.uprn = f.uprn
+),
+summary as (
+    select
+        match_type,
+        count(*) as count,
+        round(100.0 * count(*) / sum(count(*)) over (), 2) as percentage
+    from myt
+    group by match_type
+)
+select
+    match_type,
+    count,
+    percentage || '%' as percentage
+from summary
+order by count desc
+"""
+grouped_comparison = con.sql(sql)
+grouped_comparison.create("grouped_comparison")
+con.table("grouped_comparison").show(max_width=10000, max_rows=10)
+
+total_records = con.table("grouped_comparison").aggregate("sum(count)").fetchone()[0]
+print(f"Total records processed: {total_records:,}")
