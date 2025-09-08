@@ -1,4 +1,5 @@
 #include "trie/trie_nav.hpp"
+#include <algorithm>
 
 namespace duckdb {
 
@@ -71,6 +72,126 @@ const PNode *WalkExact(const ParsedTrie &pt, const std::vector<std::string> &tok
         }
     }
     return n;
+}
+
+GreedySkipMatchResult GreedyWalkWithSkips(const ParsedTrie &pt, const std::vector<std::string> &toks,
+                                          bool allow_prefix, int32_t max_skips) {
+    GreedySkipMatchResult res;
+    const PNode *root = pt.root;
+    if (root == nullptr) {
+        return res;
+    }
+    if (max_skips < 0) {
+        max_skips = 0;
+    }
+
+    if (!allow_prefix) {
+        const PNode *node = root;
+        int32_t skips_left = max_skips;
+        for (idx_t ti = toks.size(); ti > 0; --ti) {
+            const std::string &tok = toks[ti - 1];
+            const PNode *next = FindChild(node, tok);
+            if (next) {
+                node = next;
+                res.last_node = node;
+                res.matched_len++;
+                if (node->term == 1 && node->uprn != 0) {
+                    res.deepest_unique = node;
+                }
+                continue;
+            }
+            if (skips_left > 0 && ti > 1) {
+                const std::string &tok_after_skip = toks[ti - 2];
+                const PNode *after = FindChild(node, tok_after_skip);
+                if (after) {
+                    res.skipped++;
+                    skips_left--;
+                    node = after;
+                    res.last_node = node;
+                    res.matched_len++;
+                    if (node->term == 1 && node->uprn != 0) {
+                        res.deepest_unique = node;
+                    }
+                    // we consumed one extra token (ti-2), so advance the loop an extra step
+                    --ti;
+                    continue;
+                }
+            }
+            break;
+        }
+        return res;
+    }
+
+    const PNode *node = root;
+    const PNode *best_last = nullptr;
+    int32_t best_len = 0;
+    int32_t curr_len = 0;
+    int32_t skips_left = max_skips;
+
+    for (idx_t ti = toks.size(); ti > 0; --ti) {
+        const std::string &tok = toks[ti - 1];
+        const PNode *next = FindChild(node, tok);
+        if (next) {
+            node = next;
+            curr_len++;
+            res.last_node = node;
+            if (curr_len > best_len) {
+                best_len = curr_len;
+                best_last = node;
+            }
+            if (node->term == 1 && node->uprn != 0) {
+                res.deepest_unique = node;
+            }
+            continue;
+        }
+
+        if (skips_left > 0 && ti > 1) {
+            const std::string &tok_after_skip = toks[ti - 2];
+            const PNode *after = FindChild(node, tok_after_skip);
+            if (after) {
+                res.skipped++;
+                skips_left--;
+                node = after;
+                curr_len++;
+                res.last_node = node;
+                if (curr_len > best_len) {
+                    best_len = curr_len;
+                    best_last = node;
+                }
+                if (node->term == 1 && node->uprn != 0) {
+                    res.deepest_unique = node;
+                }
+                --ti;
+                continue;
+            }
+        }
+
+        // miss and cannot skip: reset to root and retry this token from root
+        node = root;
+        skips_left = max_skips;
+        curr_len = 0;
+        next = FindChild(node, tok);
+        if (next) {
+            node = next;
+            curr_len = 1;
+            res.last_node = node;
+            if (curr_len > best_len) {
+                best_len = curr_len;
+                best_last = node;
+            }
+            if (node->term == 1 && node->uprn != 0) {
+                res.deepest_unique = node;
+            }
+            continue;
+        }
+        // if even root fails, continue to the next earlier token (shorter suffix)
+    }
+
+    if (best_last != nullptr) {
+        res.last_node = best_last;
+        res.matched_len = best_len;
+    }
+    return res;
 }
 
 } // namespace duckdb

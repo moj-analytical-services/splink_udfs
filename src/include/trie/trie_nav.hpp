@@ -23,4 +23,15 @@ void PrecomputeSuffixCounts(const ParsedTrie &pt, const std::vector<std::string>
 // Walk an exact token path from root; returns the final node or nullptr if any token missing.
 const PNode *WalkExact(const ParsedTrie &pt, const std::vector<std::string> &toks);
 
+// ---- Greedy matcher with optional single-token skips (right->left) ----
+struct GreedySkipMatchResult {
+    const PNode *last_node = nullptr;       // node reached after the walk / best segment
+    const PNode *deepest_unique = nullptr;  // deepest node with term==1 encountered
+    int32_t matched_len = 0;                // number of consumed tokens (right->left)
+    int32_t skipped = 0;                    // number of tokens skipped
+};
+
+GreedySkipMatchResult GreedyWalkWithSkips(const ParsedTrie &pt, const std::vector<std::string> &toks,
+                                          bool allow_prefix, int32_t max_skips);
+
 } // namespace duckdb

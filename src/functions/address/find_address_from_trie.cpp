@@ -22,7 +22,7 @@ static unique_ptr<FunctionLocalState> FindAddrInitLocal(ExpressionState &, const
     return make_uniq<FindAddrLocalState>();
 }
 
-// find_address_from_trie(tokens, trie [, allow_prefix=false]) -> BIGINT (UPRN or NULL)
+// find_address_from_trie(tokens, trie [, allow_prefix=false [, max_skips=0]]) -> BIGINT (UPRN or NULL)
 static void FindAddressExec(DataChunk &args, ExpressionState &state, Vector &result) {
     auto &local = ExecuteFunctionState::GetFunctionState(state)->Cast<FindAddrLocalState>();
 
@@ -87,48 +87,35 @@ static void FindAddressExec(DataChunk &args, ExpressionState &state, Vector &res
             }
         }
 
-        // Walk path right→left. If allow_prefix is false, require full match and terminal==1.
-        // If allow_prefix is true, reset to root when a token is missing (skip unmatched leading tokens)
-        // and return the deepest unique terminal encountered while consuming the longest matching suffix.
-        const PNode *node = trie_ptr->root;
-        const PNode *deepest_unique = nullptr;
-        bool path_broken = false;
+        int32_t max_skips = 0;
+        if (args.ColumnCount() >= 4) {
+            UnifiedVectorFormat skip_uvf;
+            Vector &skip_vec = args.data[3];
+            skip_vec.ToUnifiedFormat(args.size(), skip_uvf);
+            const auto sid = skip_uvf.sel->get_index(i);
+            if (skip_uvf.validity.RowIsValid(sid)) {
+                auto skip_vals = UnifiedVectorFormat::GetData<int32_t>(skip_uvf);
+                int32_t v = skip_vals[sid];
+                if (v < 0) { v = 0; }
+                if (v > 1) { v = 1; }
+                max_skips = v;
+            }
+        }
 
+        auto mr = GreedyWalkWithSkips(*trie_ptr, toks, allow_prefix, max_skips);
+        const bool consumed_all = (mr.matched_len + mr.skipped == static_cast<int32_t>(toks.size()));
         if (!allow_prefix) {
-            for (idx_t ti = toks.size(); ti > 0; --ti) {
-                node = FindChild(node, toks[ti - 1]);
-                if (!node) {
-                    path_broken = true;
-                    break;
-                }
-            }
-            if (!path_broken && node && node->term == 1 && node->uprn != 0) {
-                out[i] = static_cast<int64_t>(node->uprn);
+            if (consumed_all && mr.last_node && mr.last_node->term == 1 && mr.last_node->uprn != 0) {
+                out[i] = static_cast<int64_t>(mr.last_node->uprn);
             } else {
                 FlatVector::SetNull(result, i, true);
             }
-            continue;
         } else {
-            // allow_prefix: skip non-matching leading tokens by resetting to root when a token misses
-            node = trie_ptr->root;
-            for (idx_t ti = toks.size(); ti > 0; --ti) {
-                const PNode *next = FindChild(node, toks[ti - 1]);
-                if (!next) {
-                    // reset and continue scanning earlier tokens (shorter suffix)
-                    node = trie_ptr->root;
-                    continue;
-                }
-                node = next;
-                if (node->term == 1 && node->uprn != 0) {
-                    deepest_unique = node;
-                }
-            }
-            if (deepest_unique) {
-                out[i] = static_cast<int64_t>(deepest_unique->uprn);
+            if (mr.deepest_unique) {
+                out[i] = static_cast<int64_t>(mr.deepest_unique->uprn);
             } else {
                 FlatVector::SetNull(result, i, true);
             }
-            continue;
         }
     }
 }
@@ -144,6 +131,13 @@ ScalarFunctionSet GetFindAddressFromTrieFunctionSet() {
     {
         // 3-arg variant with allow_prefix boolean
         ScalarFunction f({tokens_type, LogicalType::BLOB, LogicalType::BOOLEAN}, LogicalType::BIGINT, FindAddressExec);
+        f.init_local_state = FindAddrInitLocal;
+        set.AddFunction(f);
+    }
+    {
+        // 4-arg: allow_prefix + max_skips
+        ScalarFunction f({tokens_type, LogicalType::BLOB, LogicalType::BOOLEAN, LogicalType::INTEGER},
+                         LogicalType::BIGINT, FindAddressExec);
         f.init_local_state = FindAddrInitLocal;
         set.AddFunction(f);
     }

@@ -146,128 +146,32 @@ static void ClassifyExec(DataChunk &args, ExpressionState &state, Vector &result
             continue;
         }
 
-        const PNode *node = trie_ptr->root;
-        const PNode *last_node = nullptr;
-        const PNode *best_last_node = nullptr;
-        const PNode *deepest_unique = nullptr;
+        auto mr = GreedyWalkWithSkips(*trie_ptr, toks, allow_prefix, max_skips);
+        const bool consumed_all = (mr.matched_len + mr.skipped == static_cast<int32_t>(n));
+        cons_out[i] = consumed_all;
+        mlen_out[i] = mr.matched_len;
+        if (mr.last_node) {
+            cnt_out[i] = static_cast<int32_t>(mr.last_node->cnt);
+            term_out[i] = static_cast<int32_t>(mr.last_node->term);
+        }
 
-        int32_t matched_len = 0;      // exact or running length
-        int32_t best_matched_len = 0;  // for prefix mode
-        int32_t current_len = 0;
-
-        if (!allow_prefix) {
-            int32_t skips_left = max_skips;
-            for (idx_t ti = n; ti > 0; --ti) {
-                const std::string &tok = toks[ti - 1];
-                const PNode *next = FindChild(node, tok);
-                if (next) {
-                    node = next;
-                    last_node = node;
-                    matched_len++;
-                    if (node->term == 1 && node->uprn != 0) {
-                        deepest_unique = node;
-                    }
-                    continue;
-                }
-                if (skips_left > 0) {
-                    skips_left--;
-                    continue; // consume token without moving
-                }
-                break;
-            }
-
-            cons_out[i] = (matched_len == static_cast<int32_t>(n));
-            mlen_out[i] = matched_len;
-            if (last_node) {
-                cnt_out[i] = static_cast<int32_t>(last_node->cnt);
-                term_out[i] = static_cast<int32_t>(last_node->term);
-            }
-
-            if (cons_out[i]) {
-                if (last_node && last_node->term == 1 && last_node->uprn != 0) {
-                    status_out[i] = StringVector::AddString(status_vec, "EXACT");
-                    uprn_out[i] = static_cast<int64_t>(last_node->uprn);
-                    FlatVector::SetNull(uprn_vec, i, false);
-                } else if (last_node && last_node->term == 0) {
-                    status_out[i] = StringVector::AddString(status_vec, "INSUFFICIENT");
-                } else {
-                    status_out[i] = StringVector::AddString(status_vec, "AMBIGUOUS");
-                }
+        if (consumed_all) {
+            if (mr.last_node && mr.last_node->term == 1 && mr.last_node->uprn != 0) {
+                status_out[i] = StringVector::AddString(status_vec, "EXACT");
+                uprn_out[i] = static_cast<int64_t>(mr.last_node->uprn);
+                FlatVector::SetNull(uprn_vec, i, false);
+            } else if (mr.last_node && mr.last_node->term == 0) {
+                status_out[i] = StringVector::AddString(status_vec, "INSUFFICIENT");
             } else {
-                if (matched_len == 0) {
-                    status_out[i] = StringVector::AddString(status_vec, "NO_PATH");
-                } else if (last_node && last_node->cnt > 1) {
-                    status_out[i] = StringVector::AddString(status_vec, "AMBIGUOUS");
-                } else {
-                    status_out[i] = StringVector::AddString(status_vec, "NO_PATH");
-                }
+                status_out[i] = StringVector::AddString(status_vec, "AMBIGUOUS");
             }
         } else {
-            // allow_prefix: scan right->left with reset on miss, track longest suffix and deepest unique
-            node = trie_ptr->root;
-            int32_t skips_left = max_skips;
-            for (idx_t ti = n; ti > 0; --ti) {
-                const std::string &tok = toks[ti - 1];
-                bool reattempt = true;
-                while (true) {
-                    const PNode *next = FindChild(node, tok);
-                    if (next) {
-                        node = next;
-                        last_node = node;
-                        current_len++;
-                        if (current_len > best_matched_len) {
-                            best_matched_len = current_len;
-                            best_last_node = node;
-                        }
-                        if (node->term == 1 && node->uprn != 0) {
-                            deepest_unique = node;
-                        }
-                        break;
-                    }
-                    if (skips_left > 0) {
-                        skips_left--;
-                        break; // consume token but do not advance
-                    }
-                    if (node != trie_ptr->root && reattempt) {
-                        node = trie_ptr->root;
-                        skips_left = max_skips;
-                        current_len = 0;
-                        reattempt = false;
-                        continue; // retry this token from root
-                    }
-                    node = trie_ptr->root;
-                    skips_left = max_skips;
-                    current_len = 0;
-                    break;
-                }
-            }
-
-            mlen_out[i] = best_matched_len;
-            cons_out[i] = (best_matched_len == static_cast<int32_t>(n));
-            const PNode *final = best_last_node;
-            if (!final) {
+            if (mr.matched_len == 0) {
                 status_out[i] = StringVector::AddString(status_vec, "NO_PATH");
-                continue;
-            }
-            cnt_out[i] = static_cast<int32_t>(final->cnt);
-            term_out[i] = static_cast<int32_t>(final->term);
-
-            if (cons_out[i]) {
-                if (final->term == 1 && final->uprn != 0) {
-                    status_out[i] = StringVector::AddString(status_vec, "EXACT");
-                    uprn_out[i] = static_cast<int64_t>(final->uprn);
-                    FlatVector::SetNull(uprn_vec, i, false);
-                } else if (final->term == 0) {
-                    status_out[i] = StringVector::AddString(status_vec, "INSUFFICIENT");
-                } else {
-                    status_out[i] = StringVector::AddString(status_vec, "AMBIGUOUS");
-                }
+            } else if (mr.last_node && mr.last_node->cnt > 1) {
+                status_out[i] = StringVector::AddString(status_vec, "AMBIGUOUS");
             } else {
-                if (final->cnt > 1) {
-                    status_out[i] = StringVector::AddString(status_vec, "AMBIGUOUS");
-                } else {
-                    status_out[i] = StringVector::AddString(status_vec, "NO_PATH");
-                }
+                status_out[i] = StringVector::AddString(status_vec, "NO_PATH");
             }
         }
     }
@@ -309,4 +213,3 @@ ScalarFunctionSet GetFindAddressFromTrieClassifyFunctionSet() {
 }
 
 } // namespace duckdb
-

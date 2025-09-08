@@ -63,6 +63,15 @@ static void FindAddressDbgExec(DataChunk &args, ExpressionState &state, Vector &
         pref_vals = UnifiedVectorFormat::GetData<bool>(pref_uvf);
     }
 
+    bool has_skips = args.ColumnCount() >= 4;
+    UnifiedVectorFormat skip_uvf;
+    const int32_t *skip_vals = nullptr;
+    if (has_skips) {
+        Vector &skip_vec = args.data[3];
+        skip_vec.ToUnifiedFormat(args.size(), skip_uvf);
+        skip_vals = UnifiedVectorFormat::GetData<int32_t>(skip_uvf);
+    }
+
     std::vector<std::string> toks;
 
     for (idx_t i = 0; i < args.size(); ++i) {
@@ -114,71 +123,27 @@ static void FindAddressDbgExec(DataChunk &args, ExpressionState &state, Vector &
             continue;
         }
 
-        const PNode *node = trie_ptr->root;
-        const PNode *last_node = nullptr;
-        const PNode *deepest_unique = nullptr;
-        int32_t matched_len = 0;
+        int32_t max_skips = 0;
+        if (has_skips) {
+            const auto sid = skip_uvf.sel->get_index(i);
+            if (skip_uvf.validity.RowIsValid(sid)) {
+                int32_t v = skip_vals[sid];
+                if (v < 0) { v = 0; }
+                if (v > 1) { v = 1; }
+                max_skips = v;
+            }
+        }
 
-        if (!allow_prefix) {
-            // Single pass right→left, stop at first miss
-            for (idx_t ti = n; ti > 0; --ti) {
-                const PNode *next = FindChild(node, toks[ti - 1]);
-                if (!next) {
-                    break;
-                }
-                node = next;
-                last_node = node;
-                matched_len++;
-                if (node->term == 1 && node->uprn != 0) {
-                    deepest_unique = node;
-                }
-            }
-
-            mlen_out[i] = matched_len;
-            if (last_node) {
-                term_out[i] = last_node->term > 0;
-                amb_out[i] = last_node->term > 1;
-            }
-
-            if (matched_len == static_cast<int32_t>(n) && last_node && last_node->term == 1 && last_node->uprn != 0) {
-                uprn_out[i] = static_cast<int64_t>(last_node->uprn);
-                FlatVector::SetNull(uprn_vec, i, false);
-            }
-        } else {
-            // allow_prefix=true: scan right→left, resetting to root on miss;
-            // report the longest matched suffix length and deepest unique terminal encountered
-            int32_t current_len = 0;
-            const PNode *best_last_node = nullptr;
-            node = trie_ptr->root;
-            for (idx_t ti = n; ti > 0; --ti) {
-                const PNode *next = FindChild(node, toks[ti - 1]);
-                if (!next) {
-                    node = trie_ptr->root;
-                    current_len = 0;
-                    continue;
-                }
-                node = next;
-                current_len++;
-                last_node = node;
-                if (current_len > matched_len) {
-                    matched_len = current_len;
-                    best_last_node = node;
-                }
-                if (node->term == 1 && node->uprn != 0) {
-                    deepest_unique = node;
-                }
-            }
-
-            mlen_out[i] = matched_len;
-            if (best_last_node) {
-                term_out[i] = best_last_node->term > 0;
-                amb_out[i] = best_last_node->term > 1;
-            }
-
-            if (deepest_unique) {
-                uprn_out[i] = static_cast<int64_t>(deepest_unique->uprn);
-                FlatVector::SetNull(uprn_vec, i, false);
-            }
+        auto mr = GreedyWalkWithSkips(*trie_ptr, toks, allow_prefix, max_skips);
+        mlen_out[i] = mr.matched_len;
+        if (mr.last_node) {
+            term_out[i] = mr.last_node->term > 0;
+            amb_out[i] = mr.last_node->term > 1;
+        }
+        const bool consumed_all = (mr.matched_len + mr.skipped == static_cast<int32_t>(n));
+        if (consumed_all && mr.last_node && mr.last_node->term == 1 && mr.last_node->uprn != 0) {
+            uprn_out[i] = static_cast<int64_t>(mr.last_node->uprn);
+            FlatVector::SetNull(uprn_vec, i, false);
         }
     }
 }
@@ -204,6 +169,13 @@ ScalarFunctionSet GetFindAddressFromTrieDbgFunctionSet() {
     // 3-arg with allow_prefix
     {
         ScalarFunction f({tokens_type, LogicalType::BLOB, LogicalType::BOOLEAN}, out_type, FindAddressDbgExec);
+        f.init_local_state = FindAddrDbgInitLocal;
+        set.AddFunction(f);
+    }
+    // 4-arg with allow_prefix + max_skips
+    {
+        ScalarFunction f({tokens_type, LogicalType::BLOB, LogicalType::BOOLEAN, LogicalType::INTEGER}, out_type,
+                         FindAddressDbgExec);
         f.init_local_state = FindAddrDbgInitLocal;
         set.AddFunction(f);
     }
