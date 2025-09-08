@@ -61,10 +61,12 @@ select
 
 from read_parquet('{EPC_GLOB}')
 where postcode is not null
-limit 100
+
 """
 messy_addresses = con.sql(sql)
 messy_addresses.create("messy_addresses")
+c = messy_addresses.count("*").fetchone()[0]
+print(f"Number of messy addresses: {c:,}")
 
 
 sql = f"""
@@ -85,7 +87,7 @@ from pc_cleaned
 """
 os_addresses = con.sql(sql)
 os_addresses.create("os_addresses")
-con.table("os_addresses").show(max_width=10000, max_rows=5)
+
 
 sql = """
 SELECT postcode_group, build_suffix_trie(uprn, tokens) AS trie
@@ -94,19 +96,19 @@ GROUP BY postcode_group;
 """
 trie = con.sql(sql)
 trie.create("trie")
-con.table("trie").show(max_width=10000, max_rows=5)
 
+
+t0 = time.perf_counter()
 sql = """
 SELECT find_address_from_trie(m.tokens, r.trie, TRUE, 1) AS uprn,
 m.tokens
-
 FROM messy_addresses m
 JOIN trie r USING (postcode_group)
-
 """
 found = con.sql(sql)
 found.create("found")
-con.table("found").show(max_width=10000, max_rows=5)
+dt = time.perf_counter() - t0
+print(f"{dt:8.3f} s")
 
 
 sql = """
@@ -123,3 +125,5 @@ where array_to_string(f.tokens, ' ') != array_to_string(o.tokens, ' ')
 comparison = con.sql(sql)
 comparison.create("comparison")
 con.table("comparison").show(max_width=10000, max_rows=5)
+c = con.table("comparison").count("*").fetchone()[0]
+print(f"Number of differences: {c:,}")
