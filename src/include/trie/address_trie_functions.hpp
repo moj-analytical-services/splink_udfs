@@ -19,5 +19,7 @@ ScalarFunctionSet GetFormatAddressWithTermFunctionSet();
 ScalarFunctionSet GetFindAddressFromTrieFunctionSet();
 // Debug struct variant: uprn/matched_len/is_terminal/ambiguous
 ScalarFunctionSet GetFindAddressFromTrieDbgFunctionSet();
+// Classifier: EXACT / INSUFFICIENT / AMBIGUOUS / NO_PATH with evidence
+ScalarFunctionSet GetFindAddressFromTrieClassifyFunctionSet();
 
 } // namespace duckdb
