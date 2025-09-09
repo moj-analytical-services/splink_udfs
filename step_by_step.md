@@ -40,13 +40,9 @@ We will also **prune** `address_trie_functions.hpp` so it declares only the buil
 
 # Step-by-step plan
 
-## 0) Establish a green baseline (verifiable)
 
-* Build the project as-is to confirm it’s green.
 
-  * **Verify:** `cmake --build build && ctest` (or your current flow) succeeds.
-
-## 1) Stop registering the features you’re about to remove (minimal impact, easy revert)
+## 1) Stop registering the features you’re about to remove (minimal impact, easy revert) — DONE
 
 **File:** `src/splink_udfs_extension.cpp`
 
@@ -74,7 +70,7 @@ We will also **prune** `address_trie_functions.hpp` so it declares only the buil
   SELECT * FROM duckdb_functions() WHERE name = 'build_suffix_trie';
   ```
 
-## 2) Prune the public *declarations* to only the builder (no behavior change yet)
+## 2) Prune the public *declarations* to only the builder (no behavior change yet) — DONE
 
 **File:** `src/include/trie/address_trie_functions.hpp`
 
@@ -96,7 +92,7 @@ We will also **prune** `address_trie_functions.hpp` so it declares only the buil
 * Rebuild.
 * **Verify:** Build still green. The extension loads; step 1’s SQL checks remain correct.
 
-## 3) Stop compiling the removed features (CMake list edit only)
+## 3) Stop compiling the removed features (CMake list edit only) — DONE
 
 **File:** `CMakeLists.txt`
 
@@ -118,7 +114,7 @@ We will also **prune** `address_trie_functions.hpp` so it declares only the buil
 * Rebuild.
 * **Verify (link-time):** No undefined symbol errors for any of the removed functions.
 
-## 4) Remove now-dead headers (safe cleanup of includes)
+## 4) Remove now-dead headers (safe cleanup of includes) — DONE
 
 * **Delete files:**
 
@@ -131,7 +127,7 @@ We will also **prune** `address_trie_functions.hpp` so it declares only the buil
 * Rebuild.
 * **Verify:** Build still green.
 
-## 5) (Optional but consistent with “only builder + QCK2”): prune unused `CountTail`
+## 5) (Optional but consistent with “only builder + QCK2”): prune unused `CountTail` — DONE
 
 If you want to keep only QCK2 (de)serialization and the cache, remove the tail-count lookup which is purely for navigation/peeling.
 
@@ -154,7 +150,7 @@ If you want to keep only QCK2 (de)serialization and the cache, remove the tail-c
 
 > If you’d rather keep `CountTail` around as a harmless internal (future) helper, you can skip Step 5. It’s not referenced after Step 3.
 
-## 6) Keep the cache as-is (no code changes)
+## 6) Keep the cache as-is (no code changes) — DONE
 
 * Confirm we still compile these:
 
@@ -167,7 +163,7 @@ If you want to keep only QCK2 (de)serialization and the cache, remove the tail-c
 * Rebuild.
 * **Verify:** Still green.
 
-## 7) Runtime checks (verify the final surface)
+## 7) Runtime checks (verify the final surface) — DONE
 
 Open DuckDB with your extension loaded, then:
 
@@ -193,7 +189,7 @@ Open DuckDB with your extension loaded, then:
 
 *(If you want to sanity-peek the QCK2 magic, the first 4 bytes are ‘QCK2’. A simple proxy check is the length > 5 assertion above; if you prefer a stricter check and your DuckDB build allows casting BLOB→VARCHAR safely for ASCII, you can `CAST` and compare `substr` to `'QCK2'`.)*
 
-## 8) (Optional) Physically remove the implementation files from the repo
+## 8) (Optional) Physically remove the implementation files from the repo — DONE
 
 Now that the build no longer references them, you can delete:
 
@@ -208,7 +204,7 @@ Now that the build no longer references them, you can delete:
 * Rebuild.
 * **Verify:** Still green. Git shows the deletions only.
 
-## 9) Guardrail check: search for stragglers (scriptable)
+## 9) Guardrail check: search for stragglers (scriptable) — DONE
 
 Run a quick grep to ensure no references remain:
 
