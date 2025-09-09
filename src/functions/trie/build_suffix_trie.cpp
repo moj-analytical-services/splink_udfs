@@ -2,6 +2,7 @@
 #include "duckdb/function/aggregate_function.hpp"
 #include "duckdb/function/function_set.hpp"
 #include "duckdb/common/unordered_map.hpp"
+#include "duckdb/common/exception.hpp"
 #include "trie/address_trie_functions.hpp"
 #include "trie/suffix_trie.hpp"
 #include <algorithm>
@@ -97,7 +98,7 @@ static void StateUpdate(Vector inputs[], AggregateInputData &, idx_t input_count
 
         const auto uprn_rid = uprn_data.sel->get_index(i);
         if (!uprn_data.validity.RowIsValid(uprn_rid)) {
-            continue;
+            throw InvalidInputException("build_suffix_trie: id (BIGINT) must be non-NULL");
         }
 
         auto *st = reinterpret_cast<BuildTrieState *>(state_ptrs[i]);
@@ -119,45 +120,6 @@ static void StateUpdate(Vector inputs[], AggregateInputData &, idx_t input_count
     }
 }
 
-// Variant: only token list provided; use uprn=0 for all entries
-static void StateUpdateListOnly(Vector inputs[], AggregateInputData &aid, idx_t input_count, Vector &state,
-                                idx_t count) {
-    D_ASSERT(input_count == 1);
-    auto &list_vec = inputs[0];
-
-    UnifiedVectorFormat list_data;
-    list_vec.ToUnifiedFormat(count, list_data);
-    auto state_ptrs = FlatVector::GetData<data_ptr_t>(state);
-
-    auto &child_vec = ListVector::GetEntry(list_vec);
-    UnifiedVectorFormat child_data;
-    child_vec.ToUnifiedFormat(ListVector::GetListSize(list_vec), child_data);
-    auto child_vals = UnifiedVectorFormat::GetData<string_t>(child_data);
-    auto list_entries = ListVector::GetData(list_vec);
-
-    for (idx_t i = 0; i < count; i++) {
-        const auto rid = list_data.sel->get_index(i);
-        if (!list_data.validity.RowIsValid(rid)) {
-            continue;
-        }
-
-        auto *st = reinterpret_cast<BuildTrieState *>(state_ptrs[i]);
-        auto le = list_entries[rid];
-
-        vector<string> toks;
-        toks.reserve(le.length);
-        for (idx_t k = 0; k < le.length; k++) {
-            const auto cidx = child_data.sel->get_index(le.offset + k);
-            if (!child_data.validity.RowIsValid(cidx)) {
-                continue;
-            }
-            toks.emplace_back(child_vals[cidx].GetString());
-        }
-        if (!toks.empty()) {
-            InsertReversed(*st->root, toks, 0 /*uprn*/);
-        }
-    }
-}
 
 static void MergeTrie(TrieNode &dst, const TrieNode &src) {
     dst.cnt += src.cnt;
@@ -277,13 +239,6 @@ AggregateFunctionSet GetBuildSuffixTrieAggregateSet() {
     fn.destructor = TrieStateDestructor;
 
     set.AddFunction(fn);
-
-    // Overload: list-only variant
-    AggregateFunction fn_list_only({LogicalType::LIST(LogicalType::VARCHAR)}, LogicalType::BLOB, StateSize, StateInit,
-                                   StateUpdateListOnly, StateCombine, StateFinalize,
-                                   FunctionNullHandling::DEFAULT_NULL_HANDLING);
-    fn_list_only.destructor = TrieStateDestructor;
-    set.AddFunction(fn_list_only);
 
     return set;
 }

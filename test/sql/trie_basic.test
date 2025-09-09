@@ -6,12 +6,12 @@ require splink_udfs
 
 # Build a trie from two addresses; result should be a BLOB
 query I
-WITH addrs(tokens) AS (
-  SELECT ['10','DOWNING','STREET','LONDON']
+WITH addrs(id, tokens) AS (
+  SELECT 1, ['10','DOWNING','STREET','LONDON']
   UNION ALL
-  SELECT ['40','AVERILL','STREET','LONDON']
+  SELECT 2, ['40','AVERILL','STREET','LONDON']
 )
-SELECT typeof(build_suffix_trie(tokens))
+SELECT typeof(build_suffix_trie(id, tokens))
 FROM addrs;
 ----
 BLOB
