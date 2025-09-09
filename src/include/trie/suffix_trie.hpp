@@ -32,8 +32,6 @@ struct ParsedTrie {
 // Returns nullptr if blob is not a valid QCK2 trie.
 std::unique_ptr<ParsedTrie> ParseQCK1(const string_t &blob);
 
-// ---- Lookup ----
-// Walk a reversed tail (rightmost token first). Returns 0 if path missing.
-uint32_t CountTail(const ParsedTrie &pt, const std::vector<std::string> &tail_reversed);
+// (Navigation helpers removed as part of QCK2-only surface)
 
 } // namespace duckdb
