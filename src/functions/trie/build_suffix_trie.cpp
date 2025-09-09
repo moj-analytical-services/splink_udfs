@@ -3,6 +3,7 @@
 #include "duckdb/function/function_set.hpp"
 #include "duckdb/common/unordered_map.hpp"
 #include "trie/address_trie_functions.hpp"
+#include "trie/suffix_trie.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <string>
@@ -256,7 +257,7 @@ static void StateFinalize(Vector &state, AggregateInputData &, Vector &result, i
 		vector<uint8_t> bin;
 		bin.reserve(1024);
 		// header magic 'QCK2' and flags = 0x00 (no legacy fields)
-		W32(bin, 0x324B4351u);
+		W32(bin, QCK2_MAGIC);
 		bin.push_back(0x00);
 		SerializeNodeQCK2(*st->root, bin);
 

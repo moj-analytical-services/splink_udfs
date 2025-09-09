@@ -30,7 +30,7 @@ struct ParsedTrie {
 
 // ---- Parser ----
 // Returns nullptr if blob is not a valid QCK2 trie.
-std::unique_ptr<ParsedTrie> ParseQCK1(const string_t &blob);
+std::unique_ptr<ParsedTrie> ParseQCK2(const string_t &blob);
 
 // (Navigation helpers removed as part of QCK2-only surface)
 

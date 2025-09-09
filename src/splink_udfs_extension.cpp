@@ -214,7 +214,7 @@ static void LoadInternal(DatabaseInstance &instance) {
 
 	RegisterNgrams(instance);
 
-	// ---- NEW: trie + address helpers ----
+	// ---- trie: builder only (QCK2) ----
 	ExtensionUtil::RegisterFunction(instance, GetBuildSuffixTrieAggregateSet());
 	// Removed registrations for peel/address helpers per step-by-step plan
 }
