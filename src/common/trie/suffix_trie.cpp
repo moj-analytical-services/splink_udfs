@@ -134,34 +134,6 @@ std::unique_ptr<ParsedTrie> ParseQCK1(const string_t &blob) {
 	return std::move(parsed);
 }
 
-uint32_t CountTail(const ParsedTrie &pt, const std::vector<std::string> &tail_reversed) {
-	const PNode *n = pt.root;
-	if (!n) {
-		return 0;
-	}
-	for (const auto &tok : tail_reversed) {
-		const auto &kids = n->kids;
-		size_t lo = 0, hi = kids.size();
-		bool found = false;
-		while (lo < hi) {
-			size_t mid = (lo + hi) / 2;
-			int cmp = tok.compare(kids[mid].first);
-			if (cmp == 0) {
-				n = kids[mid].second;
-				found = true;
-				break;
-			}
-			if (cmp < 0) {
-				hi = mid;
-			} else {
-				lo = mid + 1;
-			}
-		}
-		if (!found) {
-			return 0;
-		}
-	}
-	return n->cnt;
-}
+// CountTail removed with navigation helpers
 
 } // namespace duckdb

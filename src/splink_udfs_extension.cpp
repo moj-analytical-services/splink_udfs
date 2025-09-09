@@ -216,9 +216,7 @@ static void LoadInternal(DatabaseInstance &instance) {
 
 	// ---- NEW: trie + address helpers ----
 	ExtensionUtil::RegisterFunction(instance, GetBuildSuffixTrieAggregateSet());
-	ExtensionUtil::RegisterFunction(instance, GetPeelEndTokensFunctionSet());
-	ExtensionUtil::RegisterFunction(instance, GetBuildCleanedAddressFunctionSet());
-	ExtensionUtil::RegisterFunction(instance, GetFormatAddressWithCountsFunctionSet());
+	// Removed registrations for peel/address helpers per step-by-step plan
 }
 
 void SplinkUdfsExtension::Load(DuckDB &db) {
