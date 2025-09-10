@@ -79,28 +79,39 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 	if (trie.root == nullptr) {
 		return false;
 	}
-	if (tokens.empty()) {
+	const size_t N = tokens.size();
+	if (N == 0) {
 		return false;
 	}
-	PNode *node = trie.root;
-	// Walk tokens from right to left to match reversed-suffix trie
-	for (size_t i = tokens.size(); i > 0; --i) {
-		const auto &tok = tokens[i - 1];
-		node = FindChild(node, tok);
-		if (node == nullptr) {
-			return false;
+
+	// Allow skipping tokens at the start of the reversed sequence.
+	// Concretely: for s in [0, N-1], try to match the first (N-s) tokens, reversed.
+	for (size_t s = 0; s < N; ++s) {
+		PNode *node = trie.root;
+		const size_t upto = N - s; // consider only the first 'upto' tokens
+		bool failed = false;
+
+		for (size_t k = 0; k < upto; ++k) {
+			const std::string &tok = tokens[upto - 1 - k]; // walk right-to-left over the prefix
+			node = FindChild(node, tok);
+			if (node == nullptr) {
+				failed = true;
+				break;
+			}
+		}
+
+		if (!failed) {
+			// Succeed only if the final node is a single exact terminal.
+			//   - term == 1  → uprn is meaningful (may legitimately be 0)
+			//   - term == 0  → non-terminal; uprn is 0 and ignored
+			//   - term > 1   → ambiguous terminal; uprn is 0 and ignored
+			if (node->term == 1) {
+				uprn_out = node->uprn;
+				return true;
+			}
 		}
 	}
-
-	// Succeed only if the final node is a single exact terminal.
-	//   - term == 1  → uprn is meaningful (may legitimately be 0)
-	//   - term == 0  → non-terminal; uprn is 0 and ignored
-	//   - term > 1   → ambiguous terminal; uprn is 0 and ignored
-	if (node->term != 1) {
-		return false; // caller should treat as no exact match
-	}
-	uprn_out = node->uprn;
-	return true;
+	return false;
 }
 
 } // namespace duckdb

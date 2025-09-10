@@ -8,9 +8,12 @@
 namespace duckdb {
 
 // Core, engine-agnostic trie lookup.
-// Given left-to-right tokens, walks the reversed-suffix trie.
-// Returns true and sets uprn_out if found and terminal (uprn_out may be 0 for ambiguous terminal by design).
-// Returns false if path not found or not terminal.
+// Given left-to-right tokens, walks the reversed-suffix trie and allows skipping
+// tokens at the start of the reversed sequence (i.e., ignores up to s trailing
+// tokens from the left-to-right input). Finds the longest suffix that fully
+// matches a path from the root and succeeds only if the final node is a single
+// exact terminal (term == 1). Returns true and sets uprn_out on success; returns
+// false otherwise.
 bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &tokens, uint64_t &uprn_out);
 
 } // namespace duckdb
