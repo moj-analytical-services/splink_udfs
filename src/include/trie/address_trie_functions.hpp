@@ -5,7 +5,6 @@
 
 namespace duckdb {
 
-// Keep ONLY the builder aggregate declaration
 AggregateFunctionSet GetBuildSuffixTrieAggregateSet();
 
 // Simple exact lookup: follows reversed tokens through the trie and returns UPRN if terminal, else NULL
