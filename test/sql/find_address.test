@@ -22,6 +22,50 @@ INSERT INTO rows VALUES
     (8,  '6 LOVE LANE KINGS LANGLEY'),
     (9,  '7 LOVE LANE KINGS LANGLEY'),
     (10, 'MY LONG BUSINESS NAME 9 LOVE LANE KINGS LANGLEY'),
+    (11, 'FLAT A 10 LOVE LANE KINGS LANGLEY'),
+    (12, 'FLAT B 10 LOVE LANE KINGS LANGLEY'),
+    (102, '10 LOVE LANE KINGS LANGLEY'),
+    (103, '11 LOVE LANE KINGS LANGLEY'),
+    (104, '12 LOVE LANE KINGS LANGLEY'),
+    (105, '13 LOVE LANE KINGS LANGLEY'),
+    (106, '14 LOVE LANE KINGS LANGLEY'),
+    (107, '15 LOVE LANE KINGS LANGLEY'),
+    (108, '16 LOVE LANE KINGS LANGLEY'),
+    (109, '17 LOVE LANE KINGS LANGLEY'),
+    (110, '18 LOVE LANE KINGS LANGLEY'),
+    (111, '19 LOVE LANE KINGS LANGLEY'),
+    (112, '20 LOVE LANE KINGS LANGLEY'),
+    (113, '21 LOVE LANE KINGS LANGLEY'),
+    (114, '22 LOVE LANE KINGS LANGLEY'),
+    (115, '23 LOVE LANE KINGS LANGLEY'),
+    (116, '24 LOVE LANE KINGS LANGLEY');
+
+
+# Add additional addresses to push dataset size well above the skip threshold (> 15)
+statement ok
+INSERT INTO rows VALUES
+    (101, '8 LOVE LANE KINGS LANGLEY'),
+    (102, '10 LOVE LANE KINGS LANGLEY'),
+    (103, '11 LOVE LANE KINGS LANGLEY'),
+    (104, '12 LOVE LANE KINGS LANGLEY'),
+    (105, '13 LOVE LANE KINGS LANGLEY'),
+    (106, '14 LOVE LANE KINGS LANGLEY'),
+    (107, '15 LOVE LANE KINGS LANGLEY'),
+    (108, '16 LOVE LANE KINGS LANGLEY'),
+    (109, '17 LOVE LANE KINGS LANGLEY'),
+    (110, '18 LOVE LANE KINGS LANGLEY'),
+    (111, '19 LOVE LANE KINGS LANGLEY'),
+    (112, '20 LOVE LANE KINGS LANGLEY'),
+    (113, '21 LOVE LANE KINGS LANGLEY'),
+    (114, '22 LOVE LANE KINGS LANGLEY'),
+    (115, '23 LOVE LANE KINGS LANGLEY'),
+    (116, '24 LOVE LANE KINGS LANGLEY');
+
+# Add flat-specific addresses to test skip gating in specific parts
+statement ok
+INSERT INTO rows VALUES
+    (201, 'FLAT 1 10 LOVE LANE KINGS LANGLEY'),
+    (202, 'FLAT 2 10 LOVE LANE KINGS LANGLEY');
 
 # Build the reverse suffix trie blob from tokens
 statement ok
@@ -98,8 +142,37 @@ SELECT find_address(tok('7 XYZ LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_bl
 ----
 9
 
-# Spurious token between 7 and ANNEX (deep leaf)
+# Spurious token between 7 and ANNEX (deep leaf): skip should NOT apply at specific node (cnt small)
 query I
 SELECT find_address(tok('ANNEX XYZ 7 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
 ----
-2
+NULL
+
+# Spurious token between KINGS and LANGLEY: skip should apply (cnt large at this context)
+query I
+SELECT find_address(tok('1 LOVE LANE KINGS SKIP LANGLEY'), (SELECT b FROM trie_blob));
+----
+3
+
+# Near start-of-address: do not skip within most-specific parts (flat/house)
+query I
+SELECT find_address(tok('FLAT 1 A 10 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
+
+query I
+SELECT find_address(tok('FLAT A GROUND 10 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# Near start-of-address: do not skip within most-specific parts (flat/house)
+query I
+SELECT find_address(tok('FLAT A 10 LOVE LANE KINGS SKIP LANGLEY ENGLAND'), (SELECT b FROM trie_blob));
+----
+11
+
+query I
+SELECT find_address(tok('FLAT A 10 SKIP LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+11
