@@ -57,10 +57,13 @@
 
 namespace duckdb {
 
-// Hardening: only allow an in-walk skip when we are at a node with
-// sufficient branching (i.e., many addresses share this context). This avoids
-// skipping in the most specific parts near the start of an address (house/flat).
-static constexpr uint32_t SKIP_MIN_LOCAL_COUNT = 15; // allow skip only if current node->cnt > 15
+// Hardening & tuning of skip behavior during a walk:
+// - Allow at most a small, fixed number of in-walk skips (token deletions) using
+//   a one-token lookahead. This tolerates spurious tokens inside the span.
+// - Only allow a skip at nodes with sufficient branching (high local cardinality),
+//   to avoid skipping near very specific address parts (house/flat number).
+static constexpr uint32_t SKIP_MIN_LOCAL_COUNT = 10; // allow skip only if current node->cnt > 10
+static constexpr uint32_t SKIP_MAX_IN_WALK = 2;      // allow up to 2 skips per walk
 
 // Binary search for a child by token (kids are sorted by token)
 static inline PNode *FindChild(PNode *node, const std::string &tok) {
@@ -90,32 +93,42 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 	}
 
 	// Define a reversed view: R[i] = tokens[N - 1 - i]
-	// Try starts s in [0, N). For each s, greedily walk with at most one
-	// in-walk skip using a one-token lookahead on mismatch.
+	// Try starts s in [0, N). For each s, greedily walk with up to
+	// SKIP_MAX_IN_WALK in-walk skips using a one-token lookahead on mismatch.
 	for (size_t s = 0; s < N; ++s) {
 		PNode *node = trie.root;
 		size_t i = s;
-		bool skipped = false; // allow at most one in-walk skip
-		while (i < N) {
-			const std::string &tok = tokens[N - 1 - i];
-			PNode *child = FindChild(node, tok);
-			if (child != nullptr) {
-				node = child;
-				i++;
-				continue;
-			}
+		uint32_t skips_used = 0; // allow up to SKIP_MAX_IN_WALK in-walk skips
+        while (i < N) {
+            const std::string &tok = tokens[N - 1 - i];
+            PNode *child = FindChild(node, tok);
+            if (child != nullptr) {
+                node = child;
+                i++;
+                continue;
+            }
 
-			// No direct child. Try a single skip iff the next token matches a child
-			if (!skipped && (i + 1) < N && node->cnt > SKIP_MIN_LOCAL_COUNT) {
-				const std::string &lookahead = tokens[N - 1 - (i + 1)];
-				PNode *child2 = FindChild(node, lookahead);
-				if (child2 != nullptr) {
-					skipped = true; // consume lookahead, effectively skipping R[i]
-					node = child2;
-					i += 2;
-					continue;
-				}
-			}
+            // No direct child. Try a lookahead skip for up to (SKIP_MAX_IN_WALK - skips_used) tokens.
+            if (skips_used < SKIP_MAX_IN_WALK && node->cnt > SKIP_MIN_LOCAL_COUNT) {
+                const size_t max_lookahead = std::min<size_t>(SKIP_MAX_IN_WALK - skips_used, (N - 1) - i);
+                size_t delta = 0;
+                PNode *next_child = nullptr;
+                for (size_t d = 1; d <= max_lookahead; ++d) {
+                    const std::string &la = tokens[N - 1 - (i + d)];
+                    PNode *cand = FindChild(node, la);
+                    if (cand != nullptr) {
+                        delta = d; // number of tokens to skip
+                        next_child = cand;
+                        break;
+                    }
+                }
+                if (next_child != nullptr) {
+                    skips_used += static_cast<uint32_t>(delta);
+                    node = next_child;
+                    i += delta + 1; // skip 'delta' tokens and consume the matched lookahead
+                    continue;
+                }
+            }
 
 			// Mismatch and no permissible skip -> stop this walk
 			break;

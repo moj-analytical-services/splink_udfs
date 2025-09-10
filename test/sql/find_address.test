@@ -142,6 +142,28 @@ SELECT find_address(tok('FLAT 1 A 10 LOVE LANE KINGS LANGLEY'), (SELECT b FROM t
 ----
 NULL
 
+# -----------------------------------------------------------------------------
+# Two in-walk skips (distributed in different parts with high local counts)
+# -----------------------------------------------------------------------------
+
+# Two spurious tokens: one near the end (before LANGLEY), one near the start (before LOVE)
+query I
+SELECT find_address(tok('1 X LOVE LANE KINGS SKIP LANGLEY'), (SELECT b FROM trie_blob));
+----
+3
+
+# Three spurious tokens should fail (requires > SKIP_MAX_IN_WALK)
+query I
+SELECT find_address(tok('1 X Y LOVE LANE KINGS SKIP LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# Two adjacent skips between LANE and KINGS (both skipped tokens): should still match
+query I
+SELECT find_address(tok('10 LOVE LANE HEMEL HEMPSTED KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+102
+
 
 query I
 SELECT find_address(tok('FLAT A GROUND 10 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
