@@ -65,6 +65,13 @@ namespace duckdb {
 static constexpr uint32_t SKIP_MIN_LOCAL_COUNT = 10; // allow skip only if current node->cnt > 10
 static constexpr uint32_t SKIP_MAX_IN_WALK = 2;      // allow up to 2 skips per walk
 
+// Allow seeding the walk from nodes up to K edges below the root (depth-limited entry nodes).
+// This permits skipping missing tail tokens from the canonical (trie) side when they are
+// absent in the messy input. Example: canonical "1 LOVE LANE KINGS LANGLEY" vs messy
+// "1 LOVE LANE KINGS" can match by starting from the child at depth 1 (LANGLEY) before
+// consuming any tokens.
+static constexpr uint32_t MAX_TRIE_ENTRY_DEPTH = 2; // allows skipping end tokens present only in the trie
+
 // Binary search for a child by token (kids are sorted by token)
 static inline PNode *FindChild(PNode *node, const std::string &tok) {
 	if (node == nullptr) {
@@ -92,66 +99,98 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 		return false;
 	}
 
-	// Define a reversed view: R[i] = tokens[N - 1 - i]
-	// Try starts s in [0, N). For each s, greedily walk with up to
-	// SKIP_MAX_IN_WALK in-walk skips using a one-token lookahead on mismatch.
-	for (size_t s = 0; s < N; ++s) {
-		PNode *node = trie.root;
-		size_t i = s;
-		uint32_t skips_used = 0; // allow up to SKIP_MAX_IN_WALK in-walk skips
-        while (i < N) {
-            const std::string &tok = tokens[N - 1 - i];
-            PNode *child = FindChild(node, tok);
-            if (child != nullptr) {
-                node = child;
-                i++;
-                continue;
-            }
-
-            // No direct child. Try a lookahead skip for up to (SKIP_MAX_IN_WALK - skips_used) tokens.
-            // Skip is allowed only if the LANDING child's count is sufficiently large,
-            // to avoid skipping into very specific parts (e.g., house/flat numbers).
-            if (skips_used < SKIP_MAX_IN_WALK) {
-                const size_t max_lookahead = std::min<size_t>(SKIP_MAX_IN_WALK - skips_used, (N - 1) - i);
-                size_t delta = 0;
-                PNode *next_child = nullptr;
-                for (size_t d = 1; d <= max_lookahead; ++d) {
-                    const std::string &la = tokens[N - 1 - (i + d)];
-                    PNode *cand = FindChild(node, la);
-                    if (cand != nullptr && cand->cnt > SKIP_MIN_LOCAL_COUNT) {
-                        delta = d; // number of tokens to skip
-                        next_child = cand;
-                        break;
-                    }
-                }
-                if (next_child != nullptr) {
-                    skips_used += static_cast<uint32_t>(delta);
-                    node = next_child;
-                    i += delta + 1; // skip 'delta' tokens and consume the matched lookahead
-                    continue;
-                }
-            }
-
-			// Mismatch and no permissible skip -> stop this walk
-			break;
-		}
-
-		// Acceptance:
-		// Succeed only if the final node is a single exact terminal.
-		//   - term == 1  → uprn is meaningful (may legitimately be 0)
-		//   - term == 0  → non-terminal; uprn is 0 and ignored
-		//   - term > 1   → ambiguous terminal; uprn is 0 and ignored
-		// Additionally, allow early acceptance at terminal leaves:
-		//   - Terminal leaf (no children): accept even if tokens remain (i < N)
-		//   - Terminal non-leaf: accept only if we consumed all tokens (i == N)
-		if (node->term == 1) {
-			const bool is_leaf = node->kids.empty();
-			if (is_leaf || i == N) {
-				uprn_out = node->uprn;
-				return true;
+	// Precompute entry nodes up to MAX_TRIE_ENTRY_DEPTH edges below the root.
+	// We seed walks from each such node before consuming any tokens (to allow
+	// missing tail tokens in the messy input).
+	std::vector<PNode *> entry_nodes;
+	entry_nodes.reserve(8); // small default; expands as needed
+	entry_nodes.push_back(trie.root);
+	if (MAX_TRIE_ENTRY_DEPTH > 0) {
+		// Simple depth-limited DFS from root
+		struct StackItem {
+			PNode *node;
+			uint32_t depth;
+		};
+		std::vector<StackItem> stack;
+		stack.push_back(StackItem{trie.root, 0});
+		while (!stack.empty()) {
+			StackItem it = stack.back();
+			stack.pop_back();
+			if (it.depth == MAX_TRIE_ENTRY_DEPTH) {
+				continue;
+			}
+			for (const auto &kv : it.node->kids) {
+				PNode *child = kv.second;
+				if (child != nullptr) {
+					entry_nodes.push_back(child);
+					stack.push_back(StackItem{child, it.depth + 1});
+				}
 			}
 		}
-		// else: no terminal or ambiguous; try next start
+	}
+
+	// Define a reversed view: R[i] = tokens[N - 1 - i]
+	// Try starts s in [0, N). For each s, try each entry node seed; for each attempt,
+	// greedily walk with up to SKIP_MAX_IN_WALK in-walk skips using one-token lookahead.
+	for (size_t s = 0; s < N; ++s) {
+		for (PNode *entry : entry_nodes) {
+			PNode *node = entry;
+			size_t i = s;
+			uint32_t skips_used = 0; // allow up to SKIP_MAX_IN_WALK in-walk skips
+			while (i < N) {
+				const std::string &tok = tokens[N - 1 - i];
+				PNode *child = FindChild(node, tok);
+				if (child != nullptr) {
+					node = child;
+					i++;
+					continue;
+				}
+
+				// No direct child. Try a lookahead skip for up to (SKIP_MAX_IN_WALK - skips_used) tokens.
+				// Skip is allowed only if the LANDING child's count is sufficiently large,
+				// to avoid skipping into very specific parts (e.g., house/flat numbers).
+				if (skips_used < SKIP_MAX_IN_WALK) {
+					const size_t max_lookahead = std::min<size_t>(SKIP_MAX_IN_WALK - skips_used, (N - 1) - i);
+					size_t delta = 0;
+					PNode *next_child = nullptr;
+					for (size_t d = 1; d <= max_lookahead; ++d) {
+						const std::string &la = tokens[N - 1 - (i + d)];
+						PNode *cand = FindChild(node, la);
+						if (cand != nullptr && cand->cnt > SKIP_MIN_LOCAL_COUNT) {
+							delta = d; // number of tokens to skip
+							next_child = cand;
+							break;
+						}
+					}
+					if (next_child != nullptr) {
+						skips_used += static_cast<uint32_t>(delta);
+						node = next_child;
+						i += delta + 1; // skip 'delta' tokens and consume the matched lookahead
+						continue;
+					}
+				}
+
+				// Mismatch and no permissible skip -> stop this walk
+				break;
+			}
+
+			// Acceptance:
+			// Succeed only if the final node is a single exact terminal.
+			//   - term == 1  → uprn is meaningful (may legitimately be 0)
+			//   - term == 0  → non-terminal; uprn is 0 and ignored
+			//   - term > 1   → ambiguous terminal; uprn is 0 and ignored
+			// Additionally, allow early acceptance at terminal leaves:
+			//   - Terminal leaf (no children): accept even if tokens remain (i < N)
+			//   - Terminal non-leaf: accept only if we consumed all tokens (i == N)
+			if (node->term == 1) {
+				const bool is_leaf = node->kids.empty();
+				if (is_leaf || i == N) {
+					uprn_out = node->uprn;
+					return true;
+				}
+			}
+			// else: no terminal or ambiguous; try next (entry, start) attempt
+		}
 	}
 	return false;
 }

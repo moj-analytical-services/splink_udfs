@@ -88,6 +88,12 @@ SELECT find_address(tok('1 LOVE LANE KINGS LANGLEY HERTFORDSHIRE ENGLAND'), (SEL
 query I
 SELECT find_address(tok('1 LOVE LANE KINGS'), (SELECT b FROM trie_blob));
 ----
+3
+
+# Truncated much further (too short): should not match
+query I
+SELECT find_address(tok('1 LOVE'), (SELECT b FROM trie_blob));
+----
 NULL
 
 # Early acceptance at terminal leaf: tolerate extra leading tokens
