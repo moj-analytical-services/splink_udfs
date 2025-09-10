@@ -41,25 +41,7 @@ INSERT INTO rows VALUES
     (116, '24 LOVE LANE KINGS LANGLEY');
 
 
-# Add additional addresses to push dataset size well above the skip threshold (> 15)
-statement ok
-INSERT INTO rows VALUES
-    (101, '8 LOVE LANE KINGS LANGLEY'),
-    (102, '10 LOVE LANE KINGS LANGLEY'),
-    (103, '11 LOVE LANE KINGS LANGLEY'),
-    (104, '12 LOVE LANE KINGS LANGLEY'),
-    (105, '13 LOVE LANE KINGS LANGLEY'),
-    (106, '14 LOVE LANE KINGS LANGLEY'),
-    (107, '15 LOVE LANE KINGS LANGLEY'),
-    (108, '16 LOVE LANE KINGS LANGLEY'),
-    (109, '17 LOVE LANE KINGS LANGLEY'),
-    (110, '18 LOVE LANE KINGS LANGLEY'),
-    (111, '19 LOVE LANE KINGS LANGLEY'),
-    (112, '20 LOVE LANE KINGS LANGLEY'),
-    (113, '21 LOVE LANE KINGS LANGLEY'),
-    (114, '22 LOVE LANE KINGS LANGLEY'),
-    (115, '23 LOVE LANE KINGS LANGLEY'),
-    (116, '24 LOVE LANE KINGS LANGLEY');
+
 
 # Add flat-specific addresses to test skip gating in specific parts
 statement ok
