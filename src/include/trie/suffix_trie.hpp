@@ -18,6 +18,8 @@ struct PNode {
 	std::vector<std::pair<std::string, PNode *>> kids;
 
 	// Terminal metadata for QCK2
+	// - term: number of addresses that end at this node
+	// - uprn: VALID ONLY if term == 1; otherwise MUST be 0 and ignored
 	uint32_t term = 0; // number of addresses that end here
 	uint64_t uprn = 0; // valid when term == 1
 };
