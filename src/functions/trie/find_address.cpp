@@ -6,6 +6,7 @@
 
 #include "trie/address_trie_functions.hpp"
 #include "trie/suffix_trie.hpp"
+#include "trie/address_lookup.hpp"
 #include "trie/suffix_trie_cache.hpp"
 #include "trie/trie_cache_utils.hpp"
 
@@ -26,25 +27,6 @@ static unique_ptr<FunctionLocalState> FindAddressInitLocal(ExpressionState & /*s
                                                            const BoundFunctionExpression & /*expr*/,
                                                            FunctionData * /*bind_data*/) {
 	return make_uniq<FindAddressLocalState>();
-}
-
-// Binary search for child by token in a node's sorted kids vector
-static inline PNode *FindChildByToken(PNode *node, const std::string &tok) {
-	if (DUCKDB_UNLIKELY(node == nullptr)) {
-		return nullptr;
-	}
-	auto &kids = node->kids;
-	auto it = std::lower_bound(kids.begin(), kids.end(), tok,
-	                           [](const std::pair<std::string, PNode *> &kv, const std::string &s) {
-		                           return kv.first < s;
-	                           });
-	if (it == kids.end()) {
-		return nullptr;
-	}
-	if (it->first != tok) {
-		return nullptr;
-	}
-	return it->second;
 }
 
 static void FindAddressScalar(DataChunk &args, ExpressionState &state, Vector &result) {
@@ -95,34 +77,24 @@ static void FindAddressScalar(DataChunk &args, ExpressionState &state, Vector &r
 			continue;
 		}
 
-		PNode *node = parsed->root;
-		bool failed = false;
-		// Walk tokens in reverse order
+		// Materialize left-to-right tokens for core lookup (skip NULL child tokens)
+		std::vector<std::string> toks;
+		toks.reserve(le.length);
 		for (idx_t k = 0; k < le.length; ++k) {
-			const idx_t cidx = child_data.sel->get_index(le.offset + (le.length - 1 - k));
+			const idx_t cidx = child_data.sel->get_index(le.offset + k);
 			if (!child_data.validity.RowIsValid(cidx)) {
-				failed = true;
-				break;
+				continue;
 			}
-			const auto tok = child_vals[cidx].GetString();
-			node = FindChildByToken(node, tok);
-			if (node == nullptr) {
-				failed = true;
-				break;
-			}
+			toks.emplace_back(child_vals[cidx].GetString());
 		}
 
-		if (failed) {
+		uint64_t uprn = 0;
+		const bool ok = FindAddressExact(*parsed, toks, uprn);
+		if (!ok) {
 			FlatVector::SetNull(result, row, true);
 			continue;
 		}
-
-		if (node->term == 0) {
-			FlatVector::SetNull(result, row, true);
-			continue;
-		}
-
-		out[row] = static_cast<int64_t>(node->uprn);
+		out[row] = static_cast<int64_t>(uprn);
 	}
 }
 
