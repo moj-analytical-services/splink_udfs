@@ -85,18 +85,35 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
     }
 
     // Define a reversed view: R[i] = tokens[N - 1 - i]
-    // Try starts s in [0, N). For each s, greedily walk until mismatch.
+    // Try starts s in [0, N). For each s, greedily walk with at most one
+    // in-walk skip using a one-token lookahead on mismatch.
     for (size_t s = 0; s < N; ++s) {
         PNode *node = trie.root;
         size_t i = s;
+        bool skipped = false; // allow at most one in-walk skip
         while (i < N) {
             const std::string &tok = tokens[N - 1 - i];
             PNode *child = FindChild(node, tok);
-            if (child == nullptr) {
-                break; // mismatch; stop this walk
+            if (child != nullptr) {
+                node = child;
+                i++;
+                continue;
             }
-            node = child;
-            i++;
+
+            // No direct child. Try a single skip iff the next token matches a child
+            if (!skipped && (i + 1) < N) {
+                const std::string &lookahead = tokens[N - 1 - (i + 1)];
+                PNode *child2 = FindChild(node, lookahead);
+                if (child2 != nullptr) {
+                    skipped = true; // consume lookahead, effectively skipping R[i]
+                    node = child2;
+                    i += 2;
+                    continue;
+                }
+            }
+
+            // Mismatch and no permissible skip -> stop this walk
+            break;
         }
 
         // Acceptance:

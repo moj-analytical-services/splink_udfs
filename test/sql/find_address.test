@@ -81,3 +81,25 @@ query I
 SELECT find_address(tok('XXX ANNEX 7 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
 ----
 2
+
+# -----------------------------------------------------------------------------
+# In-walk single skip with one-token lookahead
+# -----------------------------------------------------------------------------
+
+# Spurious token inside the span: skip it and continue (leaf terminal)
+query I
+SELECT find_address(tok('1 XYZ LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+3
+
+# Spurious token inside for non-leaf terminal: still must consume all tokens
+query I
+SELECT find_address(tok('7 XYZ LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+9
+
+# Spurious token between 7 and ANNEX (deep leaf)
+query I
+SELECT find_address(tok('ANNEX XYZ 7 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+2
