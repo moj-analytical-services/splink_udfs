@@ -112,17 +112,17 @@ SELECT find_address(tok('XXX ANNEX 7 LOVE LANE KINGS LANGLEY'), (SELECT b FROM t
 # In-walk single skip with one-token lookahead
 # -----------------------------------------------------------------------------
 
-# Spurious token inside the span: skip it and continue (leaf terminal)
+# Spurious token inside the span near specific node: should NOT skip (landing on '1' has low count)
 query I
 SELECT find_address(tok('1 XYZ LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
 ----
-3
+NULL
 
-# Spurious token inside for non-leaf terminal: still must consume all tokens
+# Spurious token inside for non-leaf terminal: should NOT skip into '7' (low count)
 query I
 SELECT find_address(tok('7 XYZ LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
 ----
-9
+NULL
 
 # Spurious token between 7 and ANNEX (deep leaf): skip should NOT apply at specific node (cnt small)
 query I
@@ -146,11 +146,12 @@ NULL
 # Two in-walk skips (distributed in different parts with high local counts)
 # -----------------------------------------------------------------------------
 
-# Two spurious tokens: one near the end (before LANGLEY), one near the start (before LOVE)
+# Two spurious tokens: one near the end (before LANGLEY), one near the start (before LOVE) — but near LOVE landing
+# would be on '1' (low count), so this should NOT match under landing-node gating
 query I
 SELECT find_address(tok('1 X LOVE LANE KINGS SKIP LANGLEY'), (SELECT b FROM trie_blob));
 ----
-3
+NULL
 
 # Three spurious tokens should fail (requires > SKIP_MAX_IN_WALK)
 query I
@@ -163,6 +164,12 @@ query I
 SELECT find_address(tok('10 LOVE LANE HEMEL HEMPSTED KINGS LANGLEY'), (SELECT b FROM trie_blob));
 ----
 102
+
+# Landing-node gating: cannot skip into '1' (low count) even if two skips budget exists
+query I
+SELECT find_address(tok('1 SKIP LOVE LANE KINGS SKIP LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
 
 
 query I
@@ -179,4 +186,4 @@ SELECT find_address(tok('FLAT A 10 LOVE LANE KINGS SKIP LANGLEY ENGLAND'), (SELE
 query I
 SELECT find_address(tok('FLAT A 10 SKIP LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
 ----
-11
+NULL

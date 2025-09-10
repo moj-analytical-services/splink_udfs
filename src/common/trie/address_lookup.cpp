@@ -109,14 +109,16 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
             }
 
             // No direct child. Try a lookahead skip for up to (SKIP_MAX_IN_WALK - skips_used) tokens.
-            if (skips_used < SKIP_MAX_IN_WALK && node->cnt > SKIP_MIN_LOCAL_COUNT) {
+            // Skip is allowed only if the LANDING child's count is sufficiently large,
+            // to avoid skipping into very specific parts (e.g., house/flat numbers).
+            if (skips_used < SKIP_MAX_IN_WALK) {
                 const size_t max_lookahead = std::min<size_t>(SKIP_MAX_IN_WALK - skips_used, (N - 1) - i);
                 size_t delta = 0;
                 PNode *next_child = nullptr;
                 for (size_t d = 1; d <= max_lookahead; ++d) {
                     const std::string &la = tokens[N - 1 - (i + d)];
                     PNode *cand = FindChild(node, la);
-                    if (cand != nullptr) {
+                    if (cand != nullptr && cand->cnt > SKIP_MIN_LOCAL_COUNT) {
                         delta = d; // number of tokens to skip
                         next_child = cand;
                         break;
