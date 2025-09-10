@@ -112,7 +112,7 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 			uint32_t depth;
 		};
 		std::vector<StackItem> stack;
-		stack.push_back(StackItem{trie.root, 0});
+		stack.push_back(StackItem {trie.root, 0});
 		while (!stack.empty()) {
 			StackItem it = stack.back();
 			stack.pop_back();
@@ -123,7 +123,7 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 				PNode *child = kv.second;
 				if (child != nullptr) {
 					entry_nodes.push_back(child);
-					stack.push_back(StackItem{child, it.depth + 1});
+					stack.push_back(StackItem {child, it.depth + 1});
 				}
 			}
 		}

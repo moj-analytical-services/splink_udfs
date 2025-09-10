@@ -8,4 +8,3 @@ namespace duckdb {
 std::shared_ptr<const ParsedTrie> GetOrParseTrie(TrieCache &cache, const string_t &blob);
 
 } // namespace duckdb
-

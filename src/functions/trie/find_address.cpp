@@ -31,9 +31,9 @@ static unique_ptr<FunctionLocalState> FindAddressInitLocal(ExpressionState & /*s
 
 // Centralize local state access for portability across DuckDB versions.
 static inline FindAddressLocalState &GetFindAddressLocal(ExpressionState &state) {
-    auto ptr = ExecuteFunctionState::GetFunctionState(state);
-    D_ASSERT(ptr);
-    return ptr->Cast<FindAddressLocalState>();
+	auto ptr = ExecuteFunctionState::GetFunctionState(state);
+	D_ASSERT(ptr);
+	return ptr->Cast<FindAddressLocalState>();
 }
 
 static void FindAddressScalar(DataChunk &args, ExpressionState &state, Vector &result) {
@@ -59,7 +59,7 @@ static void FindAddressScalar(DataChunk &args, ExpressionState &state, Vector &r
 	blob_vec.ToUnifiedFormat(count, blob_data);
 	auto blob_vals = UnifiedVectorFormat::GetData<string_t>(blob_data);
 
-    auto &lstate = GetFindAddressLocal(state);
+	auto &lstate = GetFindAddressLocal(state);
 
 	for (idx_t row = 0; row < count; ++row) {
 		const auto list_rid = list_data.sel->get_index(row);
@@ -106,10 +106,10 @@ static void FindAddressScalar(DataChunk &args, ExpressionState &state, Vector &r
 }
 
 ScalarFunction GetFindAddressFunction() {
-    ScalarFunction fn("find_address", {LogicalType::LIST(LogicalType::VARCHAR), LogicalType::BLOB},
-                      LogicalType::BIGINT, FindAddressScalar);
-    fn.init_local_state = FindAddressInitLocal;
-    return fn;
+	ScalarFunction fn("find_address", {LogicalType::LIST(LogicalType::VARCHAR), LogicalType::BLOB}, LogicalType::BIGINT,
+	                  FindAddressScalar);
+	fn.init_local_state = FindAddressInitLocal;
+	return fn;
 }
 
 } // namespace duckdb
