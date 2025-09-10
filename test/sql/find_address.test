@@ -63,3 +63,21 @@ query I
 SELECT find_address(tok('1 LOVE LANE KINGS'), (SELECT b FROM trie_blob));
 ----
 NULL
+
+# Early acceptance at terminal leaf: tolerate extra leading tokens
+query I
+SELECT find_address(tok('FLAT 1 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+3
+
+# Terminal non-leaf requires full consumption: extra leading tokens should not match
+query I
+SELECT find_address(tok('FLAT 7 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# Terminal leaf deeper in tree also accepts extra leading tokens
+query I
+SELECT find_address(tok('XXX ANNEX 7 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+2

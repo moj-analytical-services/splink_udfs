@@ -59,7 +59,7 @@ namespace duckdb {
 
 // Binary search for a child by token (kids are sorted by token)
 static inline PNode *FindChild(PNode *node, const std::string &tok) {
-	if (DUCKDB_UNLIKELY(node == nullptr)) {
+	if (node == nullptr) {
 		return nullptr;
 	}
 	auto &kids = node->kids;
@@ -76,42 +76,47 @@ static inline PNode *FindChild(PNode *node, const std::string &tok) {
 }
 
 bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &tokens, uint64_t &uprn_out) {
-	if (trie.root == nullptr) {
-		return false;
-	}
-	const size_t N = tokens.size();
-	if (N == 0) {
-		return false;
-	}
+    if (trie.root == nullptr) {
+        return false;
+    }
+    const size_t N = tokens.size();
+    if (N == 0) {
+        return false;
+    }
 
-	// Allow skipping tokens at the start of the reversed sequence.
-	// Concretely: for s in [0, N-1], try to match the first (N-s) tokens, reversed.
-	for (size_t s = 0; s < N; ++s) {
-		PNode *node = trie.root;
-		const size_t upto = N - s; // consider only the first 'upto' tokens
-		bool failed = false;
+    // Define a reversed view: R[i] = tokens[N - 1 - i]
+    // Try starts s in [0, N). For each s, greedily walk until mismatch.
+    for (size_t s = 0; s < N; ++s) {
+        PNode *node = trie.root;
+        size_t i = s;
+        while (i < N) {
+            const std::string &tok = tokens[N - 1 - i];
+            PNode *child = FindChild(node, tok);
+            if (child == nullptr) {
+                break; // mismatch; stop this walk
+            }
+            node = child;
+            i++;
+        }
 
-		for (size_t k = 0; k < upto; ++k) {
-			const std::string &tok = tokens[upto - 1 - k]; // walk right-to-left over the prefix
-			node = FindChild(node, tok);
-			if (node == nullptr) {
-				failed = true;
-				break;
-			}
-		}
-
-		if (!failed) {
-			// Succeed only if the final node is a single exact terminal.
-			//   - term == 1  → uprn is meaningful (may legitimately be 0)
-			//   - term == 0  → non-terminal; uprn is 0 and ignored
-			//   - term > 1   → ambiguous terminal; uprn is 0 and ignored
-			if (node->term == 1) {
-				uprn_out = node->uprn;
-				return true;
-			}
-		}
-	}
-	return false;
+        // Acceptance:
+        // Succeed only if the final node is a single exact terminal.
+        //   - term == 1  → uprn is meaningful (may legitimately be 0)
+        //   - term == 0  → non-terminal; uprn is 0 and ignored
+        //   - term > 1   → ambiguous terminal; uprn is 0 and ignored
+        // Additionally, allow early acceptance at terminal leaves:
+        //   - Terminal leaf (no children): accept even if tokens remain (i < N)
+        //   - Terminal non-leaf: accept only if we consumed all tokens (i == N)
+        if (node->term == 1) {
+            const bool is_leaf = node->kids.empty();
+            if (is_leaf || i == N) {
+                uprn_out = node->uprn;
+                return true;
+            }
+        }
+        // else: no terminal or ambiguous; try next start
+    }
+    return false;
 }
 
 } // namespace duckdb
