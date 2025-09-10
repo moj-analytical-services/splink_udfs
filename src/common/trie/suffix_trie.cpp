@@ -1,5 +1,4 @@
 #include "trie/suffix_trie.hpp"
-#include "duckdb/common/exception.hpp"
 #include <cstring>
 #include <utility>
 
@@ -39,41 +38,60 @@ static inline bool ReadString(ParseCursor &c, std::string &s) {
 	return true;
 }
 
-static bool ParseNode(ParseCursor &c, ParsedTrie &out, PNode *&node_out) {
-	auto node = make_uniq<PNode>();
+static bool ParseNodeQCK2(ParseCursor &c, ParsedTrie &out, PNode *&node_out) {
+    auto node = make_uniq<PNode>();
 
-	// cnt
-	uint32_t cnt = 0;
-	if (!ReadU32(c, cnt)) {
-		return false;
-	}
-	node->cnt = cnt;
+    // cnt
+    uint32_t cnt = 0;
+    if (!ReadU32(c, cnt)) {
+        return false;
+    }
+    node->cnt = cnt;
 
-	// nchildren
-	uint32_t nchild = 0;
-	if (!ReadU32(c, nchild)) {
-		return false;
-	}
+    // term
+    uint32_t term = 0;
+    if (!ReadU32(c, term)) {
+        return false;
+    }
+    node->term = term;
 
-	node->kids.reserve(nchild);
-	for (uint32_t i = 0; i < nchild; ++i) {
-		std::string tok;
-		if (!ReadString(c, tok)) {
-			return false;
-		}
-		PNode *child_ptr = nullptr;
-		if (!ParseNode(c, out, child_ptr)) {
-			return false;
-		}
-		node->kids.emplace_back(std::move(tok), child_ptr);
-	}
+    // uprn (64-bit LE encoded as two u32)
+    uint32_t lo = 0;
+    uint32_t hi = 0;
+    if (!ReadU32(c, lo)) {
+        return false;
+    }
+    if (!ReadU32(c, hi)) {
+        return false;
+    }
+    uint64_t uprn = static_cast<uint64_t>(lo) | (static_cast<uint64_t>(hi) << 32);
+    node->uprn = uprn;
 
-	out.arena.emplace_back(std::move(node));
-	node_out = out.arena.back().get();
-	return true;
+    // nchildren
+    uint32_t nchild = 0;
+    if (!ReadU32(c, nchild)) {
+        return false;
+    }
+
+    node->kids.reserve(nchild);
+    for (uint32_t i = 0; i < nchild; ++i) {
+        std::string tok;
+        if (!ReadString(c, tok)) {
+            return false;
+        }
+        PNode *child_ptr = nullptr;
+        if (!ParseNodeQCK2(c, out, child_ptr)) {
+            return false;
+        }
+        node->kids.emplace_back(std::move(tok), child_ptr);
+    }
+
+    out.arena.emplace_back(std::move(node));
+    node_out = out.arena.back().get();
+    return true;
 }
 
-std::unique_ptr<ParsedTrie> ParseQCK1(const string_t &blob) {
+std::unique_ptr<ParsedTrie> ParseQCK2(const string_t &blob) {
 	auto data_ptr = reinterpret_cast<const uint8_t *>(blob.GetDataUnsafe());
 	auto data_len = blob.GetSize();
 	if (data_len < 5) {
@@ -82,30 +100,30 @@ std::unique_ptr<ParsedTrie> ParseQCK1(const string_t &blob) {
 
 	ParseCursor cur {data_ptr, data_ptr + data_len};
 
-	// header: magic
-	uint32_t magic = 0;
-	if (!ReadU32(cur, magic)) {
-		return nullptr;
-	}
-	if (magic != QCK1_MAGIC) {
-		return nullptr;
-	}
+    // header: magic
+    uint32_t magic = 0;
+    if (!ReadU32(cur, magic)) {
+        return nullptr;
+    }
+    if (magic != QCK2_MAGIC) {
+        return nullptr;
+    }
 
 	// header: flags
 	if (DUCKDB_UNLIKELY(cur.p >= cur.end)) {
 		return nullptr;
 	}
-	uint8_t flags = *cur.p++;
-	if (flags != QCK1_FLAGS_EXPECTED) {
-		return nullptr;
-	}
+    uint8_t flags = *cur.p++;
+    if (flags != 0x00) {
+        return nullptr;
+    }
 
-	auto parsed = make_uniq<ParsedTrie>();
-	PNode *root_ptr = nullptr;
-	if (!ParseNode(cur, *parsed, root_ptr)) {
-		return nullptr;
-	}
-	parsed->root = root_ptr;
+    auto parsed = make_uniq<ParsedTrie>();
+    PNode *root_ptr = nullptr;
+    if (!ParseNodeQCK2(cur, *parsed, root_ptr)) {
+        return nullptr;
+    }
+    parsed->root = root_ptr;
 
 	// Strict consumption (fail on trailing bytes)
 	if (cur.p != cur.end) {
@@ -115,34 +133,6 @@ std::unique_ptr<ParsedTrie> ParseQCK1(const string_t &blob) {
 	return std::move(parsed);
 }
 
-uint32_t CountTail(const ParsedTrie &pt, const std::vector<std::string> &tail_reversed) {
-	const PNode *n = pt.root;
-	if (!n) {
-		return 0;
-	}
-	for (const auto &tok : tail_reversed) {
-		const auto &kids = n->kids;
-		size_t lo = 0, hi = kids.size();
-		bool found = false;
-		while (lo < hi) {
-			size_t mid = (lo + hi) / 2;
-			int cmp = tok.compare(kids[mid].first);
-			if (cmp == 0) {
-				n = kids[mid].second;
-				found = true;
-				break;
-			}
-			if (cmp < 0) {
-				hi = mid;
-			} else {
-				lo = mid + 1;
-			}
-		}
-		if (!found) {
-			return 0;
-		}
-	}
-	return n->cnt;
-}
+// CountTail removed with navigation helpers
 
 } // namespace duckdb

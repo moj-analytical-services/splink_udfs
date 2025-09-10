@@ -17,10 +17,10 @@ include_directories(src/include)
 set(EXTENSION_SOURCES
   src/splink_udfs_extension.cpp
   src/functions/trie/build_suffix_trie.cpp
-  src/functions/trie/peel_end_tokens.cpp
-  src/functions/address/build_cleaned_address.cpp
-  src/functions/address/format_address_with_counts.cpp
+  src/functions/trie/find_address.cpp
+  src/common/trie/address_lookup.cpp
   src/common/trie/suffix_trie.cpp
+  src/common/trie/trie_cache_utils.cpp
 )
 
 # ---- build targets ----
