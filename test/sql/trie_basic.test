@@ -1,71 +1,17 @@
 # name: test/sql/trie_basic.test
-# description: basic smoke tests for suffix-trie address helpers
+# description: basic smoke tests for suffix-trie builder only
 # group: [sql]
 
 require splink_udfs
 
 # Build a trie from two addresses; result should be a BLOB
 query I
-WITH addrs(tokens) AS (
-  SELECT ['10','DOWNING','STREET','LONDON']
+WITH addrs(id, tokens) AS (
+  SELECT 1, ['10','DOWNING','STREET','LONDON']
   UNION ALL
-  SELECT ['40','AVERILL','STREET','LONDON']
+  SELECT 2, ['40','AVERILL','STREET','LONDON']
 )
-SELECT typeof(build_suffix_trie(tokens))
+SELECT typeof(build_suffix_trie(id, tokens))
 FROM addrs;
 ----
 BLOB
-
-# format_address_with_counts should reflect higher counts at the tail
-query I
-WITH a(tokens) AS (
-  SELECT ['10','DOWNING','STREET','LONDON']
-),
-t AS (
-  SELECT build_suffix_trie(tokens) AS blob
-  FROM (
-    SELECT ['10','DOWNING','STREET','LONDON']
-    UNION ALL
-    SELECT ['40','AVERILL','STREET','LONDON']
-  ) s(tokens)
-)
-SELECT format_address_with_counts(a.tokens, t.blob)
-FROM a, t;
-----
-10 (1) -> DOWNING (1) -> STREET (2) -> LONDON (2)
-
-# build_cleaned_address with threshold 2 should drop the last token (keep at least 3)
-query I
-WITH a(tokens) AS (
-  SELECT ['10','DOWNING','STREET','LONDON']
-),
-t AS (
-  SELECT build_suffix_trie(tokens) AS blob
-  FROM (
-    SELECT ['10','DOWNING','STREET','LONDON']
-    UNION ALL
-    SELECT ['40','AVERILL','STREET','LONDON']
-  ) s(tokens)
-)
-SELECT build_cleaned_address(a.tokens, t.blob, 2, ' ')
-FROM a, t;
-----
-10 DOWNING STREET
-
-# peel_end_tokens on this data should keep the list unchanged
-query I
-WITH a(tokens) AS (
-  SELECT ['10','DOWNING','STREET','LONDON']
-),
-t AS (
-  SELECT build_suffix_trie(tokens) AS blob
-  FROM (
-    SELECT ['10','DOWNING','STREET','LONDON']
-    UNION ALL
-    SELECT ['40','AVERILL','STREET','LONDON']
-  ) s(tokens)
-)
-SELECT peel_end_tokens(a.tokens, t.blob, 4, 2)
-FROM a, t;
-----
-[10, DOWNING, STREET, LONDON]

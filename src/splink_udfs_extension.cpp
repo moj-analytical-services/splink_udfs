@@ -214,11 +214,10 @@ static void LoadInternal(DatabaseInstance &instance) {
 
 	RegisterNgrams(instance);
 
-	// ---- NEW: trie + address helpers ----
+	// ---- trie: builder only (QCK2) ----
 	ExtensionUtil::RegisterFunction(instance, GetBuildSuffixTrieAggregateSet());
-	ExtensionUtil::RegisterFunction(instance, GetPeelEndTokensFunctionSet());
-	ExtensionUtil::RegisterFunction(instance, GetBuildCleanedAddressFunctionSet());
-	ExtensionUtil::RegisterFunction(instance, GetFormatAddressWithCountsFunctionSet());
+	ExtensionUtil::RegisterFunction(instance, GetFindAddressFunction());
+	// Removed registrations for peel/address helpers per step-by-step plan
 }
 
 void SplinkUdfsExtension::Load(DuckDB &db) {

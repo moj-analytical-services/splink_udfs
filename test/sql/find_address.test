@@ -1,0 +1,195 @@
+# name: test/sql/find_address.test
+# description: address lookup via QCK2 trie + find_address() (behaviour parity with Python reference)
+# group: [sql]
+
+require splink_udfs
+
+# -----------------------------------------------------------------------------
+# Test data + trie build (matches the Python rows[] with one duplicate for ambiguity)
+# -----------------------------------------------------------------------------
+
+statement ok
+CREATE TEMP TABLE rows(uprn BIGINT, addr VARCHAR);
+
+statement ok
+INSERT INTO rows VALUES
+    (2,  'ANNEX 7 LOVE LANE KINGS LANGLEY'),
+    (3,  '1 LOVE LANE KINGS LANGLEY'),
+    (4,  '2 LOVE LANE KINGS LANGLEY'),
+    (5,  '3 LOVE LANE KINGS LANGLEY'),
+    (6,  '4 LOVE LANE KINGS LANGLEY'),
+    (7,  '5 LOVE LANE KINGS LANGLEY'),
+    (8,  '6 LOVE LANE KINGS LANGLEY'),
+    (9,  '7 LOVE LANE KINGS LANGLEY'),
+    (10, 'MY LONG BUSINESS NAME 9 LOVE LANE KINGS LANGLEY'),
+    (11, 'FLAT A 10 LOVE LANE KINGS LANGLEY'),
+    (12, 'FLAT B 10 LOVE LANE KINGS LANGLEY'),
+    (102, '10 LOVE LANE KINGS LANGLEY'),
+    (103, '11 LOVE LANE KINGS LANGLEY'),
+    (104, '12 LOVE LANE KINGS LANGLEY'),
+    (105, '13 LOVE LANE KINGS LANGLEY'),
+    (106, '14 LOVE LANE KINGS LANGLEY'),
+    (107, '15 LOVE LANE KINGS LANGLEY'),
+    (108, '16 LOVE LANE KINGS LANGLEY'),
+    (109, '17 LOVE LANE KINGS LANGLEY'),
+    (110, '18 LOVE LANE KINGS LANGLEY'),
+    (111, '19 LOVE LANE KINGS LANGLEY'),
+    (112, '20 LOVE LANE KINGS LANGLEY'),
+    (113, '21 LOVE LANE KINGS LANGLEY'),
+    (114, '22 LOVE LANE KINGS LANGLEY'),
+    (115, '23 LOVE LANE KINGS LANGLEY'),
+    (116, '24 LOVE LANE KINGS LANGLEY');
+
+
+
+
+# Add flat-specific addresses to test skip gating in specific parts
+statement ok
+INSERT INTO rows VALUES
+    (201, 'FLAT 1 10 LOVE LANE KINGS LANGLEY'),
+    (202, 'FLAT 2 10 LOVE LANE KINGS LANGLEY');
+
+# Build the reverse suffix trie blob from tokens
+statement ok
+CREATE TEMP TABLE trie_blob AS
+WITH toks AS (
+  SELECT uprn, string_split(addr, ' ') AS tokens
+  FROM rows
+)
+SELECT build_suffix_trie(uprn, tokens) AS b
+FROM toks;
+
+# Convenience macro: split a messy string into token list
+statement ok
+CREATE MACRO tok(s) AS string_split(s, ' ');
+
+# Sanity: the blob exists
+query I
+SELECT typeof((SELECT b FROM trie_blob));
+----
+BLOB
+
+
+query I
+SELECT find_address(tok('1 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+3
+
+query I
+SELECT find_address(tok('1 LOVE LANE KINGS LANGLEY HERTFORDSHIRE'), (SELECT b FROM trie_blob));
+----
+3
+
+query I
+SELECT find_address(tok('1 LOVE LANE KINGS LANGLEY HERTFORDSHIRE ENGLAND'), (SELECT b FROM trie_blob));
+----
+3
+
+query I
+SELECT find_address(tok('1 LOVE LANE KINGS'), (SELECT b FROM trie_blob));
+----
+3
+
+# Truncated much further (too short): should not match
+query I
+SELECT find_address(tok('1 LOVE'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# Early acceptance at terminal leaf: tolerate extra leading tokens
+query I
+SELECT find_address(tok('FLAT 1 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+3
+
+# Terminal non-leaf requires full consumption: extra leading tokens should not match
+query I
+SELECT find_address(tok('FLAT 7 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# Terminal leaf deeper in tree also accepts extra leading tokens
+query I
+SELECT find_address(tok('XXX ANNEX 7 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+2
+
+# -----------------------------------------------------------------------------
+# In-walk single skip with one-token lookahead
+# -----------------------------------------------------------------------------
+
+# Spurious token inside the span near specific node: should NOT skip (landing on '1' has low count)
+query I
+SELECT find_address(tok('1 XYZ LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# Spurious token inside for non-leaf terminal: should NOT skip into '7' (low count)
+query I
+SELECT find_address(tok('7 XYZ LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# Spurious token between 7 and ANNEX (deep leaf): skip should NOT apply at specific node (cnt small)
+query I
+SELECT find_address(tok('ANNEX XYZ 7 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# Spurious token between KINGS and LANGLEY: skip should apply (cnt large at this context)
+query I
+SELECT find_address(tok('1 LOVE LANE KINGS SKIP LANGLEY'), (SELECT b FROM trie_blob));
+----
+3
+
+# Near start-of-address: do not skip within most-specific parts (flat/house)
+query I
+SELECT find_address(tok('FLAT 1 A 10 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# -----------------------------------------------------------------------------
+# Two in-walk skips (distributed in different parts with high local counts)
+# -----------------------------------------------------------------------------
+
+# Two spurious tokens: one near the end (before LANGLEY), one near the start (before LOVE) — but near LOVE landing
+# would be on '1' (low count), so this should NOT match under landing-node gating
+query I
+SELECT find_address(tok('1 X LOVE LANE KINGS SKIP LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# Three spurious tokens should fail (requires > SKIP_MAX_IN_WALK)
+query I
+SELECT find_address(tok('1 X Y LOVE LANE KINGS SKIP LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# Two adjacent skips between LANE and KINGS (both skipped tokens): should still match
+query I
+SELECT find_address(tok('10 LOVE LANE HEMEL HEMPSTED KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+102
+
+# Landing-node gating: cannot skip into '1' (low count) even if two skips budget exists
+query I
+SELECT find_address(tok('1 SKIP LOVE LANE KINGS SKIP LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
+
+query I
+SELECT find_address(tok('FLAT A GROUND 10 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# Near start-of-address: do not skip within most-specific parts (flat/house)
+query I
+SELECT find_address(tok('FLAT A 10 LOVE LANE KINGS SKIP LANGLEY ENGLAND'), (SELECT b FROM trie_blob));
+----
+11
+
+query I
+SELECT find_address(tok('FLAT A 10 SKIP LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
