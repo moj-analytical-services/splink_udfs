@@ -115,7 +115,8 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 	// Use UnifiedVectorFormat instead of full flatten
 	UnifiedVectorFormat child_view;
 	input_child.ToUnifiedFormat(input_child_size, child_view);
-	auto child_data = UnifiedVectorFormat::GetData<data_t>(child_view);
+	// Note: do NOT call GetData<uint8_t>() for VARCHAR child vectors; strings are handled via
+	// VectorOperations::Copy for non-fast path or dictionary slicing for fast-string path below.
 
 	// First pass – count total n‑grams
 	idx_t total_ngrams = 0;
