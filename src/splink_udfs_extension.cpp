@@ -231,6 +231,8 @@ std::string SplinkUdfsExtension::Version() const {
 
 } // namespace duckdb
 
+extern "C" {
 DUCKDB_CPP_EXTENSION_ENTRY(splink_udfs, loader) {
 	duckdb::LoadInternal(loader);
+}
 }
