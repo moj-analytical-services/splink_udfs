@@ -2,7 +2,6 @@
 #include "splink_udfs_extension.hpp"
 #include "duckdb.hpp"
 #include "duckdb/function/scalar_function.hpp"
-#include "duckdb/main/extension_util.hpp"
 
 #include "phonetic/soundex.hpp"
 #include "phonetic/strip_diacritics.hpp"
@@ -182,20 +181,17 @@ static void DoubleMetaphoneScalarList(DataChunk &data_chunk, ExpressionState & /
 	ListVector::SetListSize(result, child_offset);
 }
 
-static void LoadInternal(DatabaseInstance &instance) {
-	ExtensionUtil::RegisterFunction(
-	    instance, ScalarFunction("soundex", {LogicalType::VARCHAR}, LogicalType::VARCHAR, SoundexScalar));
+static void LoadInternal(ExtensionLoader &loader) {
+	loader.RegisterFunction(ScalarFunction("soundex", {LogicalType::VARCHAR}, LogicalType::VARCHAR, SoundexScalar));
 
-	ExtensionUtil::RegisterFunction(instance, ScalarFunction("strip_diacritics", {LogicalType::VARCHAR},
-	                                                         LogicalType::VARCHAR, StripDiacriticsScalar));
+	loader.RegisterFunction(
+	    ScalarFunction("strip_diacritics", {LogicalType::VARCHAR}, LogicalType::VARCHAR, StripDiacriticsScalar));
 
-	ExtensionUtil::RegisterFunction(
-	    instance, ScalarFunction("unaccent", {LogicalType::VARCHAR}, LogicalType::VARCHAR, UnaccentScalar));
+	loader.RegisterFunction(ScalarFunction("unaccent", {LogicalType::VARCHAR}, LogicalType::VARCHAR, UnaccentScalar));
 
 	// Register double_metaphone with new list return type
-	ExtensionUtil::RegisterFunction(instance,
-	                                ScalarFunction("double_metaphone", {LogicalType::VARCHAR},
-	                                               LogicalType::LIST(LogicalType::VARCHAR), DoubleMetaphoneScalarList));
+	loader.RegisterFunction(ScalarFunction("double_metaphone", {LogicalType::VARCHAR},
+	                                       LogicalType::LIST(LogicalType::VARCHAR), DoubleMetaphoneScalarList));
 
 	ScalarFunctionSet levenshtein_set("levenshtein");
 	levenshtein_set.AddFunction(
@@ -203,25 +199,25 @@ static void LoadInternal(DatabaseInstance &instance) {
 	levenshtein_set.AddFunction(ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::BIGINT},
 	                                           LogicalType::BIGINT, LevenshteinScalarWithThreshold));
 
-	ExtensionUtil::RegisterFunction(instance, levenshtein_set);
+	loader.RegisterFunction(levenshtein_set);
 
 	ScalarFunctionSet damerau_set("damerau_levenshtein");
 	damerau_set.AddFunction(
 	    ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR}, LogicalType::BIGINT, DamerauLevenshteinScalar));
 	damerau_set.AddFunction(ScalarFunction({LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::BIGINT},
 	                                       LogicalType::BIGINT, DamerauLevenshteinScalarWithThreshold));
-	ExtensionUtil::RegisterFunction(instance, damerau_set);
+	loader.RegisterFunction(damerau_set);
 
-	RegisterNgrams(instance);
+	RegisterNgrams(loader);
 
 	// ---- trie: builder only (QCK2) ----
-	ExtensionUtil::RegisterFunction(instance, GetBuildSuffixTrieAggregateSet());
-	ExtensionUtil::RegisterFunction(instance, GetFindAddressFunction());
+	loader.RegisterFunction(GetBuildSuffixTrieAggregateSet());
+	loader.RegisterFunction(GetFindAddressFunction());
 	// Removed registrations for peel/address helpers per step-by-step plan
 }
 
-void SplinkUdfsExtension::Load(DuckDB &db) {
-	LoadInternal(*db.instance);
+void SplinkUdfsExtension::Load(ExtensionLoader &loader) {
+	LoadInternal(loader);
 }
 
 std::string SplinkUdfsExtension::Name() {
@@ -235,13 +231,7 @@ std::string SplinkUdfsExtension::Version() const {
 } // namespace duckdb
 
 extern "C" {
-
-DUCKDB_EXTENSION_API void splink_udfs_init(duckdb::DatabaseInstance &db) {
-	duckdb::DuckDB(db).LoadExtension<duckdb::SplinkUdfsExtension>();
+DUCKDB_CPP_EXTENSION_ENTRY(splink_udfs, loader) {
+	duckdb::LoadInternal(loader);
 }
-
-DUCKDB_EXTENSION_API const char *splink_udfs_version() {
-	return duckdb::DuckDB::LibraryVersion();
 }
-
-} // extern "C"

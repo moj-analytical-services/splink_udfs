@@ -9,7 +9,6 @@
 #include "duckdb/common/vector_operations/vector_operations.hpp"
 #include "duckdb/function/scalar_function.hpp"
 #include "duckdb/execution/expression_executor.hpp"
-#include "duckdb/main/extension_util.hpp"
 #include "duckdb/planner/expression/bound_cast_expression.hpp"
 #include "duckdb/planner/expression/bound_function_expression.hpp"
 
@@ -114,7 +113,8 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 	// Use UnifiedVectorFormat instead of full flatten
 	UnifiedVectorFormat child_view;
 	input_child.ToUnifiedFormat(input_child_size, child_view);
-	auto child_data = UnifiedVectorFormat::GetData<data_t>(child_view);
+	// Note: do NOT call GetData<uint8_t>() for VARCHAR child vectors; strings are handled via
+	// VectorOperations::Copy for non-fast path or dictionary slicing for fast-string path below.
 
 	// First pass – count total n‑grams
 	idx_t total_ngrams = 0;
@@ -257,10 +257,10 @@ static ScalarFunction MakeFunc() {
 //===--------------------------------------------------------------------===//
 // Registrar – call from the extension's LoadInternal()
 //===--------------------------------------------------------------------===//
-static inline void RegisterNgrams(DatabaseInstance &db) {
+static inline void RegisterNgrams(ExtensionLoader &loader) {
 	ScalarFunctionSet set("ngrams");
 	set.AddFunction(MakeFunc());
-	ExtensionUtil::RegisterFunction(db, set);
+	loader.RegisterFunction(set);
 }
 
 } // namespace duckdb
