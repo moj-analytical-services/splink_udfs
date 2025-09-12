@@ -17,4 +17,3 @@ public:
 };
 
 } // namespace duckdb
-// no extern "C" declarations here; DUCKDB_CPP_EXTENSION_ENTRY is defined in the .cpp for v1.4+

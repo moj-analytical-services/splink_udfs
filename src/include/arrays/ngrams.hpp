@@ -9,8 +9,6 @@
 #include "duckdb/common/vector_operations/vector_operations.hpp"
 #include "duckdb/function/scalar_function.hpp"
 #include "duckdb/execution/expression_executor.hpp"
-// Prefer registering through the loader in DuckDB v1.4+
-// Note: ExtensionUtil has been removed in DuckDB 1.4+. Use ExtensionLoader path only.
 #include "duckdb/planner/expression/bound_cast_expression.hpp"
 #include "duckdb/planner/expression/bound_function_expression.hpp"
 

@@ -2,7 +2,6 @@
 #include "splink_udfs_extension.hpp"
 #include "duckdb.hpp"
 #include "duckdb/function/scalar_function.hpp"
-// no extension_util include needed for v1.4 loader path
 
 #include "phonetic/soundex.hpp"
 #include "phonetic/strip_diacritics.hpp"
