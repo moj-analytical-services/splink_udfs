@@ -230,7 +230,6 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 				// Mismatch and no permissible skip -> stop this walk
 				break;
 			}
-
 		}
 	}
 	return false;
