@@ -205,3 +205,34 @@ query I
 SELECT find_address(tok('FLAT A 10 SKIP LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
 ----
 NULL
+
+
+# -----------------------------------------------------------------------------
+# Degenerate case: single-token leaf at depth 1 must not match with zero tokens
+# -----------------------------------------------------------------------------
+
+# Add a singleton token address that becomes a root-child leaf
+statement ok
+INSERT INTO rows VALUES (1, 'ROBIN');
+
+# Rebuild a separate trie including the singleton
+statement ok
+CREATE TEMP TABLE trie_blob_singleton AS
+WITH toks AS (
+  SELECT uprn, string_split(addr, ' ') AS tokens
+  FROM rows
+)
+SELECT build_suffix_trie(uprn, tokens) AS b
+FROM toks;
+
+# Control: exact lookup for 'ROBIN' should succeed
+query I
+SELECT find_address(tok('ROBIN'), (SELECT b FROM trie_blob_singleton));
+----
+1
+
+# Critical regression: unrelated tokens must NOT yield 'ROBIN' via zero-consumption acceptance
+query I
+SELECT find_address(tok('KINGS LANGLEY HERTS'), (SELECT b FROM trie_blob_singleton));
+----
+NULL

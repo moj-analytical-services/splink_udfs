@@ -117,11 +117,14 @@ static inline PNode *ResolveUniqueTerminal(PNode *node) {
 	return nullptr;
 }
 
-static inline bool TryAcceptCurrentNode(PNode *node, size_t tokens_consumed, size_t total_tokens, uint64_t &uprn_out) {
+static inline bool TryAcceptCurrentNode(PNode *node, size_t start_index, size_t tokens_consumed, size_t total_tokens,
+                                        uint64_t &uprn_out) {
 	if (node == nullptr) {
 		return false;
 	}
-	if (node->cnt == 1) {
+	const bool consumed_any = tokens_consumed > start_index;
+	// Unique-path acceptance (cnt == 1): require progress unless we consumed the entire input.
+	if (node->cnt == 1 && (consumed_any || tokens_consumed == total_tokens)) {
 		PNode *terminal = ResolveUniqueTerminal(node);
 		if (terminal != nullptr && terminal->term == 1) {
 			uprn_out = terminal->uprn;
@@ -130,7 +133,8 @@ static inline bool TryAcceptCurrentNode(PNode *node, size_t tokens_consumed, siz
 	}
 	if (node->term == 1) {
 		const bool is_leaf = node->kids.empty();
-		if (is_leaf || tokens_consumed == total_tokens) {
+		// Terminal acceptance: always when fully consumed, or early-leaf only after consuming something.
+		if (tokens_consumed == total_tokens || (is_leaf && consumed_any)) {
 			uprn_out = node->uprn;
 			return true;
 		}
@@ -185,7 +189,7 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 			PNode *node = entry;
 			size_t i = s;
 			uint32_t skips_used = 0; // allow up to SKIP_MAX_IN_WALK in-walk skips
-			if (TryAcceptCurrentNode(node, i, N, uprn_out)) {
+			if (TryAcceptCurrentNode(node, s, i, N, uprn_out)) {
 				return true;
 			}
 			while (i < N) {
@@ -194,7 +198,7 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 				if (child != nullptr) {
 					node = child;
 					i++;
-					if (TryAcceptCurrentNode(node, i, N, uprn_out)) {
+					if (TryAcceptCurrentNode(node, s, i, N, uprn_out)) {
 						return true;
 					}
 					continue;
@@ -220,7 +224,7 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 						skips_used += static_cast<uint32_t>(delta);
 						node = next_child;
 						i += delta + 1; // skip 'delta' tokens and consume the matched lookahead
-						if (TryAcceptCurrentNode(node, i, N, uprn_out)) {
+						if (TryAcceptCurrentNode(node, s, i, N, uprn_out)) {
 							return true;
 						}
 						continue;
