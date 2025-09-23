@@ -65,6 +65,9 @@ namespace duckdb {
 static constexpr uint32_t SKIP_MIN_LOCAL_COUNT = 10; // allow skip only if current node->cnt > 10
 static constexpr uint32_t SKIP_MAX_IN_WALK = 2;      // allow up to 2 skips per walk
 
+static constexpr size_t MIN_MATCHED_TOKENS = 2;        // require at least two matched messy tokens
+static constexpr uint32_t ENTRY_MIN_LOCAL_COUNT = 10;  // seed only from high-fan-out nodes
+
 // Allow seeding the walk from nodes up to K edges below the root (depth-limited entry nodes).
 // This permits skipping missing tail tokens from the canonical (trie) side when they are
 // absent in the messy input. Example: canonical "1 LOVE LANE KINGS LANGLEY" vs messy
@@ -122,9 +125,11 @@ static inline bool TryAcceptCurrentNode(PNode *node, size_t start_index, size_t 
 	if (node == nullptr) {
 		return false;
 	}
-	const bool consumed_any = tokens_consumed > start_index;
-	// Unique-path acceptance (cnt == 1): require progress unless we consumed the entire input.
-	if (node->cnt == 1 && (consumed_any || tokens_consumed == total_tokens)) {
+	const size_t matched = tokens_consumed > start_index ? (tokens_consumed - start_index) : 0;
+	if (matched < MIN_MATCHED_TOKENS) {
+		return false;
+	}
+	if (node->cnt == 1) {
 		PNode *terminal = ResolveUniqueTerminal(node);
 		if (terminal != nullptr && terminal->term == 1) {
 			uprn_out = terminal->uprn;
@@ -133,8 +138,7 @@ static inline bool TryAcceptCurrentNode(PNode *node, size_t start_index, size_t 
 	}
 	if (node->term == 1) {
 		const bool is_leaf = node->kids.empty();
-		// Terminal acceptance: always when fully consumed, or early-leaf only after consuming something.
-		if (tokens_consumed == total_tokens || (is_leaf && consumed_any)) {
+		if (tokens_consumed == total_tokens || is_leaf) {
 			uprn_out = node->uprn;
 			return true;
 		}
@@ -174,7 +178,9 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 			for (const auto &kv : it.node->kids) {
 				PNode *child = kv.second;
 				if (child != nullptr) {
-					entry_nodes.push_back(child);
+					if (child->cnt >= ENTRY_MIN_LOCAL_COUNT) {
+						entry_nodes.push_back(child);
+					}
 					stack.push_back(StackItem {child, it.depth + 1});
 				}
 			}
