@@ -114,6 +114,18 @@ SELECT find_address(tok('XXX ANNEX 7 LOVE LANE KINGS LANGLEY'), (SELECT b FROM t
 ----
 2
 
+# Unique-node (cnt == 1) acceptance: tolerate mismatched trailing tokens when subtree is unambiguous
+query I
+SELECT find_address(tok('SOME OTHER COMPANY 9 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+10
+
+# Ambiguous subtree (cnt > 1) still rejects trailing mismatches
+query I
+SELECT find_address(tok('ANOTHER COMPANY 7 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
 # -----------------------------------------------------------------------------
 # In-walk single skip with one-token lookahead
 # -----------------------------------------------------------------------------
@@ -146,7 +158,7 @@ SELECT find_address(tok('1 LOVE LANE KINGS SKIP LANGLEY'), (SELECT b FROM trie_b
 query I
 SELECT find_address(tok('FLAT 1 A 10 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
 ----
-NULL
+11
 
 # -----------------------------------------------------------------------------
 # Two in-walk skips (distributed in different parts with high local counts)

@@ -90,6 +90,54 @@ static inline PNode *FindChild(PNode *node, const std::string &tok) {
 	return it->second;
 }
 
+// Descend deterministically from a node whose subtree represents exactly one address.
+// Returns the sole terminal node with term == 1, or nullptr if the subtree is malformed.
+static inline PNode *ResolveUniqueTerminal(PNode *node) {
+	if (node == nullptr) {
+		return nullptr;
+	}
+	PNode *curr = node;
+	while (curr != nullptr) {
+		if (curr->term == 1) {
+			return curr;
+		}
+		PNode *next = nullptr;
+		for (const auto &kv : curr->kids) {
+			PNode *child = kv.second;
+			if (child == nullptr || child->cnt == 0) {
+				continue;
+			}
+			if (next != nullptr) {
+				return nullptr;
+			}
+			next = child;
+		}
+		curr = next;
+	}
+	return nullptr;
+}
+
+static inline bool TryAcceptCurrentNode(PNode *node, size_t tokens_consumed, size_t total_tokens, uint64_t &uprn_out) {
+	if (node == nullptr) {
+		return false;
+	}
+	if (node->cnt == 1) {
+		PNode *terminal = ResolveUniqueTerminal(node);
+		if (terminal != nullptr && terminal->term == 1) {
+			uprn_out = terminal->uprn;
+			return true;
+		}
+	}
+	if (node->term == 1) {
+		const bool is_leaf = node->kids.empty();
+		if (is_leaf || tokens_consumed == total_tokens) {
+			uprn_out = node->uprn;
+			return true;
+		}
+	}
+	return false;
+}
+
 bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &tokens, uint64_t &uprn_out) {
 	if (trie.root == nullptr) {
 		return false;
@@ -137,12 +185,18 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 			PNode *node = entry;
 			size_t i = s;
 			uint32_t skips_used = 0; // allow up to SKIP_MAX_IN_WALK in-walk skips
+			if (TryAcceptCurrentNode(node, i, N, uprn_out)) {
+				return true;
+			}
 			while (i < N) {
 				const std::string &tok = tokens[N - 1 - i];
 				PNode *child = FindChild(node, tok);
 				if (child != nullptr) {
 					node = child;
 					i++;
+					if (TryAcceptCurrentNode(node, i, N, uprn_out)) {
+						return true;
+					}
 					continue;
 				}
 
@@ -166,6 +220,9 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 						skips_used += static_cast<uint32_t>(delta);
 						node = next_child;
 						i += delta + 1; // skip 'delta' tokens and consume the matched lookahead
+						if (TryAcceptCurrentNode(node, i, N, uprn_out)) {
+							return true;
+						}
 						continue;
 					}
 				}
@@ -174,22 +231,6 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 				break;
 			}
 
-			// Acceptance:
-			// Succeed only if the final node is a single exact terminal.
-			//   - term == 1  → uprn is meaningful (may legitimately be 0)
-			//   - term == 0  → non-terminal; uprn is 0 and ignored
-			//   - term > 1   → ambiguous terminal; uprn is 0 and ignored
-			// Additionally, allow early acceptance at terminal leaves:
-			//   - Terminal leaf (no children): accept even if tokens remain (i < N)
-			//   - Terminal non-leaf: accept only if we consumed all tokens (i == N)
-			if (node->term == 1) {
-				const bool is_leaf = node->kids.empty();
-				if (is_leaf || i == N) {
-					uprn_out = node->uprn;
-					return true;
-				}
-			}
-			// else: no terminal or ambiguous; try next (entry, start) attempt
 		}
 	}
 	return false;
