@@ -65,8 +65,8 @@ namespace duckdb {
 static constexpr uint32_t SKIP_MIN_LOCAL_COUNT = 10; // allow skip only if current node->cnt > 10
 static constexpr uint32_t SKIP_MAX_IN_WALK = 2;      // allow up to 2 skips per walk
 
-static constexpr size_t MIN_MATCHED_TOKENS = 2;        // require at least two matched messy tokens
-static constexpr uint32_t ENTRY_MIN_LOCAL_COUNT = 10;  // seed only from high-fan-out nodes
+static constexpr size_t MIN_MATCHED_TOKENS = 2;       // require at least two matched messy tokens
+static constexpr uint32_t ENTRY_MIN_LOCAL_COUNT = 10; // seed only from high-fan-out nodes
 
 // Allow seeding the walk from nodes up to K edges below the root (depth-limited entry nodes).
 // This permits skipping missing tail tokens from the canonical (trie) side when they are
