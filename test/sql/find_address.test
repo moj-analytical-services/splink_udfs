@@ -114,6 +114,18 @@ SELECT find_address(tok('XXX ANNEX 7 LOVE LANE KINGS LANGLEY'), (SELECT b FROM t
 ----
 2
 
+# Unique-node (cnt == 1) acceptance: tolerate mismatched trailing tokens when subtree is unambiguous
+query I
+SELECT find_address(tok('SOME OTHER COMPANY 9 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+10
+
+# Ambiguous subtree (cnt > 1) still rejects trailing mismatches
+query I
+SELECT find_address(tok('ANOTHER COMPANY 7 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+NULL
+
 # -----------------------------------------------------------------------------
 # In-walk single skip with one-token lookahead
 # -----------------------------------------------------------------------------
@@ -146,7 +158,7 @@ SELECT find_address(tok('1 LOVE LANE KINGS SKIP LANGLEY'), (SELECT b FROM trie_b
 query I
 SELECT find_address(tok('FLAT 1 A 10 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
 ----
-NULL
+11
 
 # -----------------------------------------------------------------------------
 # Two in-walk skips (distributed in different parts with high local counts)
@@ -193,3 +205,140 @@ query I
 SELECT find_address(tok('FLAT A 10 SKIP LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
 ----
 NULL
+
+
+
+# 0 extra tokens – should match
+query I
+SELECT find_address(tok('1 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+3
+
+# 2 extra tokens – still within limit → match
+query I
+SELECT find_address(tok('1 LOVE LANE KINGS LANGLEY EXTRA1 EXTRA2'), (SELECT b FROM trie_blob));
+----
+3
+
+# 3 extra tokens – exceeds limit → no match
+query I
+SELECT find_address(tok('1 LOVE LANE KINGS LANGLEY X Y Z'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# 3 extra tokens – exceeds limit → no match
+query I
+SELECT find_address(tok('1 LOVE LANE EXTRA KINGS LANGLEY X Y'), (SELECT b FROM trie_blob));
+----
+3
+
+# 3 extra tokens – exceeds limit → no match
+query I
+SELECT find_address(tok('1 LOVE LANE  KINGS EXTRA LANGLEY X Y'), (SELECT b FROM trie_blob));
+----
+3
+
+
+# 3 extra tokens – exceeds limit → no match
+query I
+SELECT find_address(tok('1 LOVE LANE EXTRA KINGS LANGLEY EXTRA X Y'), (SELECT b FROM trie_blob));
+----
+NULL
+
+
+# -----------------------------------------------------------------------------
+# Degenerate case: single-token leaf at depth 1 must not match with zero tokens
+# -----------------------------------------------------------------------------
+
+# Add a singleton token address that becomes a root-child leaf
+statement ok
+INSERT INTO rows VALUES (1, 'ROBIN');
+
+# Rebuild a separate trie including the singleton
+statement ok
+CREATE TEMP TABLE trie_blob_singleton AS
+WITH toks AS (
+  SELECT uprn, string_split(addr, ' ') AS tokens
+  FROM rows
+)
+SELECT build_suffix_trie(uprn, tokens) AS b
+FROM toks;
+
+# Control: exact lookup for 'ROBIN' should succeed
+query I
+SELECT find_address(tok('ROBIN'), (SELECT b FROM trie_blob_singleton));
+----
+NULL
+
+# Critical regression: unrelated tokens must NOT yield 'ROBIN' via zero-consumption acceptance
+query I
+SELECT find_address(tok('KINGS LANGLEY HERTS'), (SELECT b FROM trie_blob_singleton));
+----
+NULL
+
+# -----------------------------------------------------------------------------
+# New hardening: entry-node cardinality gate + global matched >= 2
+# -----------------------------------------------------------------------------
+
+# Build a trie that includes a very specific branch "... 1 HIGH STREET" (low cnt),
+# plus our usual LOVE/LANE path. Entry-node seeding must not allow joining at
+# such a narrow node; and even if joined, matched>=2 blocks acceptance with just '1'.
+statement ok
+CREATE TEMP TABLE rows_join(uprn BIGINT, addr VARCHAR);
+
+statement ok
+INSERT INTO rows_join VALUES
+    (1,   '1 LOVE LANE KINGS LANGLEY'),
+    (2,   '2 LOVE LANE KINGS LANGLEY'),
+    (3,   '3 LOVE LANE KINGS LANGLEY'),
+    (4,   '4 LOVE LANE KINGS LANGLEY'),
+    (5,   '5 LOVE LANE KINGS LANGLEY'),
+    (6,   '6 LOVE LANE KINGS LANGLEY'),
+    (7,   '7 LOVE LANE KINGS LANGLEY'),
+    (8,   '8 LOVE LANE KINGS LANGLEY'),
+    (9,   '9 LOVE LANE KINGS LANGLEY'),
+    (10,  'MY LONG BUSINESS NAME 9 LOVE LANE KINGS LANGLEY'),
+    (301, 'SOME OTHER ADDRESS 1 HIGH STREET');
+
+statement ok
+CREATE TEMP TABLE trie_blob_join AS
+WITH toks AS (
+  SELECT uprn, string_split(addr, ' ') AS tokens
+  FROM rows_join
+)
+SELECT build_suffix_trie(uprn, tokens) AS b
+from toks;
+
+# With the new gates, '1 LOVE' must NOT spuriously match the HIGH STREET address
+query I
+SELECT find_address(tok('1 LOVE'), (SELECT b FROM trie_blob_join));
+----
+NULL
+
+# Positive control under new rules: multi-token evidence still yields a match
+query I
+SELECT find_address(tok('1 LOVE LANE'), (SELECT b FROM trie_blob_join));
+----
+1
+
+# Global evidence gate: single-token messy input never accepts (even if present)
+statement ok
+CREATE TEMP TABLE rows_single(uprn BIGINT, addr VARCHAR);
+
+statement ok
+INSERT INTO rows_single VALUES (1, 'SINGLE');
+
+statement ok
+CREATE TEMP TABLE trie_blob_single AS
+WITH toks AS (
+  SELECT uprn, string_split(addr, ' ') AS tokens
+  FROM rows_single
+)
+SELECT build_suffix_trie(uprn, tokens) AS b
+from toks;
+
+query I
+SELECT find_address(tok('SINGLE'), (SELECT b FROM trie_blob_single));
+----
+NULL
+
