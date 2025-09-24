@@ -207,6 +207,33 @@ SELECT find_address(tok('FLAT A 10 SKIP LOVE LANE KINGS LANGLEY'), (SELECT b FRO
 NULL
 
 
+
+# 0 extra tokens – should match
+query I
+SELECT find_address(tok('1 LOVE LANE KINGS LANGLEY'), (SELECT b FROM trie_blob));
+----
+3
+
+# 2 extra tokens – still within limit → match
+query I
+SELECT find_address(tok('1 LOVE LANE KINGS LANGLEY EXTRA1 EXTRA2'), (SELECT b FROM trie_blob));
+----
+3
+
+# 3 extra tokens – exceeds limit → no match
+query I
+SELECT find_address(tok('1 LOVE LANE KINGS LANGLEY X Y Z'), (SELECT b FROM trie_blob));
+----
+NULL
+
+# 3 extra tokens – exceeds limit → no match
+query I
+SELECT find_address(tok('1 LOVE LANE EXTRA KINGS LANGLEY X Y'), (SELECT b FROM trie_blob));
+----
+3
+
+
+
 # -----------------------------------------------------------------------------
 # Degenerate case: single-token leaf at depth 1 must not match with zero tokens
 # -----------------------------------------------------------------------------
@@ -302,3 +329,4 @@ query I
 SELECT find_address(tok('SINGLE'), (SELECT b FROM trie_blob_single));
 ----
 NULL
+

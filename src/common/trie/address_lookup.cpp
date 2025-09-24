@@ -68,6 +68,13 @@ static constexpr uint32_t SKIP_MAX_IN_WALK = 2;      // allow up to 2 skips per 
 static constexpr size_t MIN_MATCHED_TOKENS = 2;       // require at least two matched messy tokens
 static constexpr uint32_t ENTRY_MIN_LOCAL_COUNT = 10; // seed only from high-fan-out nodes
 
+// ──────────────────────────────────────────────────────────────
+// limit on the number of trailing tokens (at the *end* of
+// the messy input) that may be ignored when matching a canonical
+// address.
+// ──────────────────────────────────────────────────────────────
+static constexpr size_t MAX_TRAILING_TOKENS_IGNORED = 2;
+
 // Allow seeding the walk from nodes up to K edges below the root (depth-limited entry nodes).
 // This permits skipping missing tail tokens from the canonical (trie) side when they are
 // absent in the messy input. Example: canonical "1 LOVE LANE KINGS LANGLEY" vs messy
@@ -188,13 +195,17 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 	}
 
 	// Define a reversed view: R[i] = tokens[N - 1 - i]
-	// Try starts s in [0, N). For each s, try each entry node seed; for each attempt,
-	// greedily walk with up to SKIP_MAX_IN_WALK in-walk skips using one-token lookahead.
-	for (size_t s = 0; s < N; ++s) {
+	// Try starts s in [0, min(N‑1, MAX_TRAILING_TOKENS_IGNORED)]. For each s, try each
+	// entry‑node seed; for each attempt, greedily walk with up to SKIP_MAX_IN_WALK
+	// in‑walk skips using one‑token lookahead.
+
+	const size_t max_start = std::min<size_t>(MAX_TRAILING_TOKENS_IGNORED, N > 0 ? N - 1 : 0);
+	for (size_t s = 0; s <= max_start; ++s) {
 		for (PNode *entry : entry_nodes) {
 			PNode *node = entry;
 			size_t i = s;
 			uint32_t skips_used = 0; // allow up to SKIP_MAX_IN_WALK in-walk skips
+			bool anchored = false;   // has the first real token matched yet?
 			if (TryAcceptCurrentNode(node, s, i, N, uprn_out)) {
 				return true;
 			}
@@ -204,6 +215,7 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 				if (child != nullptr) {
 					node = child;
 					i++;
+					anchored = true; // <-- first real token matched; allow skips later
 					if (TryAcceptCurrentNode(node, s, i, N, uprn_out)) {
 						return true;
 					}
@@ -214,7 +226,12 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 				// Skip is allowed only if the LANDING child's count is sufficiently large,
 				// to avoid skipping into very specific parts (e.g., house/flat numbers).
 				if (skips_used < SKIP_MAX_IN_WALK) {
-					const size_t max_lookahead = std::min<size_t>(SKIP_MAX_IN_WALK - skips_used, (N - 1) - i);
+					size_t max_lookahead = std::min<size_t>(SKIP_MAX_IN_WALK - skips_used, (N - 1) - i);
+					// If trailing tokens were ignored (s > 0), do NOT allow a skip
+					// for the very first token we try to match: force a direct anchor.
+					if (!anchored && s > 0) {
+						max_lookahead = 0;
+					}
 					size_t delta = 0;
 					PNode *next_child = nullptr;
 					for (size_t d = 1; d <= max_lookahead; ++d) {
@@ -229,7 +246,8 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 					if (next_child != nullptr) {
 						skips_used += static_cast<uint32_t>(delta);
 						node = next_child;
-						i += delta + 1; // skip 'delta' tokens and consume the matched lookahead
+						i += delta + 1;  // skip 'delta' tokens and consume the matched lookahead
+						anchored = true; // we're anchored after this hop
 						if (TryAcceptCurrentNode(node, s, i, N, uprn_out)) {
 							return true;
 						}
