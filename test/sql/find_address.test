@@ -232,6 +232,18 @@ SELECT find_address(tok('1 LOVE LANE EXTRA KINGS LANGLEY X Y'), (SELECT b FROM t
 ----
 3
 
+# 3 extra tokens – exceeds limit → no match
+query I
+SELECT find_address(tok('1 LOVE LANE  KINGS EXTRA LANGLEY X Y'), (SELECT b FROM trie_blob));
+----
+3
+
+
+# 3 extra tokens – exceeds limit → no match
+query I
+SELECT find_address(tok('1 LOVE LANE EXTRA KINGS LANGLEY EXTRA X Y'), (SELECT b FROM trie_blob));
+----
+NULL
 
 
 # -----------------------------------------------------------------------------
