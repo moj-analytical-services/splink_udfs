@@ -212,7 +212,7 @@ static void LoadInternal(ExtensionLoader &loader) {
 
 	// ---- trie: builder only (QCK2) ----
 	loader.RegisterFunction(GetBuildSuffixTrieAggregateSet());
-	loader.RegisterFunction(GetFindAddressFunction());
+	loader.RegisterFunction(GetFindAddressFunctionSet());
 	// Removed registrations for peel/address helpers per step-by-step plan
 }
 

@@ -126,9 +126,9 @@ The result (`trie_blob`) can be joined back or stored for later lookups.
 Looks up a tokenized address in the trie and returns the `id` (UPRN) **only if** the path ends at an **unambiguous** terminal. Otherwise returns `NULL`.
 
 * `tokens` (`LIST(VARCHAR)`): tokenized address in left-to-right order.
-* `trie` (`BLOB`): the trie produced by `build_suffix_trie`.
+* `trie` (`BLOB`): the blob produced by `build_suffix_trie`.
 
-**Example**
+**Default usage**
 
 ```sql
 -- Assume we persisted the trie in a single-row table `addr_trie(trie_blob BLOB)`
@@ -139,12 +139,52 @@ SELECT find_address(toks, t.trie_blob) AS uprn
 FROM q CROSS JOIN addr_trie t;
 ```
 
+#### Optional parameters
+
+The eight-argument overload exposes the tuning knobs DuckDB uses internally. Each optional `BIGINT` mirrors the default behaviour when set to the values below.
+
+```
+find_address(tokens, trie,
+             skip_min_local_count,
+             skip_max_in_walk,
+             min_matched_tokens,
+             entry_min_local_count,
+             max_trailing_tokens_ignored,
+             max_trie_entry_depth)
+```
+
+- `skip_min_local_count` (default `10`): only allow skipping over a token when the landing trie node has at least this many descendants. Example: leaving the default lets the messy input `1 LOVE LANE KINGS SKIP LANGLEY` match by skipping `SKIP`; lowering it to `0` would also allow skipping near specific house numbers.
+- `skip_max_in_walk` (default `2`): cap on how many tokens may be skipped inside one lookup. Example: setting it to `0` forces every token to match, so `1 LOVE LANE KINGS SKIP LANGLEY` would fail.
+- `min_matched_tokens` (default `2`): minimum tokens that must align before accepting a result. Example: increasing it to `3` means a lookup like `ANNEX 7 LOVE LANE ...` stops matching once only two tokens align.
+- `entry_min_local_count` (default `10`): only seed the walk from trie nodes that have at least this many descendants. Example: with the default we can start matching from the `LANGLEY` branch; raising it to `100` skips that entry point and can miss valid addresses.
+- `max_trailing_tokens_ignored` (default `2`): number of trailing tokens from the input that may be ignored. Example: the default lets `1 LOVE LANE KINGS LANGLEY EXTRA` match; setting it to `0` makes the same lookup fail.
+- `max_trie_entry_depth` (default `2`): how far below the root we seed alternative entry points. Example: with the default, `1 LOVE LANE KINGS` can match an address that ends with `LANGLEY`; setting it to `0` forces matches to start at the root so the same input fails.
+
+**Explicit parameter usage**
+
+```sql
+WITH q AS (
+  SELECT string_split(upper('10 Downing Street London Extra'), ' ') AS toks
+)
+SELECT find_address(
+         toks,
+         t.trie_blob,
+         10,  -- skip_min_local_count
+         2,   -- skip_max_in_walk
+         2,   -- min_matched_tokens
+         10,  -- entry_min_local_count
+         2,   -- max_trailing_tokens_ignored
+         2    -- max_trie_entry_depth
+       ) AS uprn
+FROM q CROSS JOIN addr_trie t;
+```
+
+All parameters are optional; omit them to keep the historical behaviour.
+
 **Notes**
 
-* If multiple addresses share the same terminal path, the node is ambiguous and `find_address` returns `NULL`.
-* Inputs with empty token lists or invalid trie blobs also return `NULL`.
-
-
+- If multiple addresses share the same terminal path, the node is ambiguous and `find_address` returns `NULL`.
+- Empty token lists or invalid trie blobs also return `NULL`.
 
 
 #### Example Usage

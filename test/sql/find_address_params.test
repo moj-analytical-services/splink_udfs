@@ -1,0 +1,62 @@
+# name: test/sql/find_address_params.test
+# description: regression coverage for parameterised find_address overload
+# group: [sql]
+
+require splink_udfs
+
+# Minimal data set and trie for parameter behaviour checks
+statement ok
+CREATE TEMP TABLE rows(uprn BIGINT, addr VARCHAR);
+
+statement ok
+INSERT INTO rows VALUES
+    (1, '1 LOVE LANE KINGS LANGLEY'),
+    (2, '2 LOVE LANE KINGS LANGLEY');
+
+statement ok
+CREATE TEMP TABLE trie_blob AS
+WITH toks AS (
+  SELECT uprn, string_split(addr, ' ') AS tokens
+  FROM rows
+)
+SELECT build_suffix_trie(uprn, tokens) AS b
+FROM toks;
+
+statement ok
+CREATE MACRO tok(s) AS string_split(s, ' ');
+
+# Default overload tolerates trailing tokens via default parameters
+query I
+SELECT find_address(tok('1 LOVE LANE KINGS LANGLEY EXTRA'), (SELECT b FROM trie_blob));
+----
+1
+
+# Explicit parameters matching defaults produce the same result
+query I
+SELECT find_address(
+    tok('1 LOVE LANE KINGS LANGLEY EXTRA'),
+    (SELECT b FROM trie_blob),
+    10, -- skip_min_local_count
+    2,  -- skip_max_in_walk
+    2,  -- min_matched_tokens
+    10, -- entry_min_local_count
+    2,  -- max_trailing_tokens_ignored
+    2   -- max_trie_entry_depth
+);
+----
+1
+
+# Stricter trailing-token limit causes the same lookup to fail
+query I
+SELECT find_address(
+    tok('1 LOVE LANE KINGS LANGLEY EXTRA'),
+    (SELECT b FROM trie_blob),
+    10,
+    2,
+    2,
+    10,
+    0, -- max_trailing_tokens_ignored tightened to zero
+    2
+);
+----
+NULL

@@ -8,6 +8,6 @@ namespace duckdb {
 AggregateFunctionSet GetBuildSuffixTrieAggregateSet();
 
 // Simple exact lookup: follows reversed tokens through the trie and returns UPRN if terminal, else NULL
-ScalarFunction GetFindAddressFunction();
+ScalarFunctionSet GetFindAddressFunctionSet();
 
 } // namespace duckdb
