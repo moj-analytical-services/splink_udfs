@@ -193,8 +193,9 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 			// You only get to skip tokens at the end of the messy
 			// address if you you've navigated the trie from root
 			// i.e. haven't jumped into the trie as a starting point
-			if (s > 0 && entry != trie.root)
+			if (s > 0 && entry != trie.root) {
 				continue;
+			}
 
 			PNode *node = entry;
 			size_t i = s;
