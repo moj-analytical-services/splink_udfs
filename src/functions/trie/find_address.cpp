@@ -49,8 +49,7 @@ static uint32_t ClampAddressParam(int64_t value) {
 	return static_cast<uint32_t>(value);
 }
 
-static void AssignParamIfValid(uint32_t &field, const UnifiedVectorFormat &data, const int64_t *values,
-							 idx_t row) {
+static void AssignParamIfValid(uint32_t &field, const UnifiedVectorFormat &data, const int64_t *values, idx_t row) {
 	const idx_t idx = data.sel->get_index(row);
 	if (!data.validity.RowIsValid(idx)) {
 		return;
@@ -162,14 +161,14 @@ ScalarFunctionSet GetFindAddressFunctionSet() {
 	ScalarFunctionSet set("find_address");
 
 	ScalarFunction base_fn({LogicalType::LIST(LogicalType::VARCHAR), LogicalType::BLOB}, LogicalType::BIGINT,
-	                      FindAddressScalar);
+	                       FindAddressScalar);
 	base_fn.init_local_state = FindAddressInitLocal;
 	set.AddFunction(base_fn);
 
 	ScalarFunction param_fn({LogicalType::LIST(LogicalType::VARCHAR), LogicalType::BLOB, LogicalType::BIGINT,
-	                        LogicalType::BIGINT, LogicalType::BIGINT, LogicalType::BIGINT, LogicalType::BIGINT,
-	                        LogicalType::BIGINT},
-	                       LogicalType::BIGINT, FindAddressScalarParam);
+	                         LogicalType::BIGINT, LogicalType::BIGINT, LogicalType::BIGINT, LogicalType::BIGINT,
+	                         LogicalType::BIGINT},
+	                        LogicalType::BIGINT, FindAddressScalarParam);
 	param_fn.init_local_state = FindAddressInitLocal;
 	set.AddFunction(param_fn);
 

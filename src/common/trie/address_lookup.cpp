@@ -112,13 +112,8 @@ static inline PNode *ResolveUniqueTerminal(PNode *node) {
 	return nullptr;
 }
 
-static inline bool TryAcceptCurrentNode(
-    const AddressMatchParams &params,
-    PNode *node,
-    size_t start_index,
-    size_t tokens_consumed,
-    size_t total_tokens,
-    uint64_t &uprn_out) {
+static inline bool TryAcceptCurrentNode(const AddressMatchParams &params, PNode *node, size_t start_index,
+                                        size_t tokens_consumed, size_t total_tokens, uint64_t &uprn_out) {
 	if (node == nullptr) {
 		return false;
 	}
@@ -143,8 +138,8 @@ static inline bool TryAcceptCurrentNode(
 	return false;
 }
 
-bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &tokens,
-                      const AddressMatchParams &params, uint64_t &uprn_out) {
+bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &tokens, const AddressMatchParams &params,
+                      uint64_t &uprn_out) {
 	if (trie.root == nullptr) {
 		return false;
 	}
@@ -190,8 +185,8 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 	// For each s, try each entry-node seed; for each attempt, greedily walk
 	// with up to params.skip_max_in_walk in-walk skips using one-token lookahead.
 
-	const size_t max_start = std::min<size_t>(
-	    static_cast<size_t>(params.max_trailing_tokens_ignored), N > 0 ? N - 1 : 0);
+	const size_t max_start =
+	    std::min<size_t>(static_cast<size_t>(params.max_trailing_tokens_ignored), N > 0 ? N - 1 : 0);
 	for (size_t s = 0; s <= max_start; ++s) {
 		for (PNode *entry : entry_nodes) {
 			PNode *node = entry;
@@ -219,8 +214,7 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 				// to avoid skipping into very specific parts (e.g., house/flat numbers).
 				if (skips_used < params.skip_max_in_walk) {
 					const uint32_t remaining_skips = params.skip_max_in_walk - skips_used;
-					size_t max_lookahead =
-					    std::min<size_t>(static_cast<size_t>(remaining_skips), (N - 1) - i);
+					size_t max_lookahead = std::min<size_t>(static_cast<size_t>(remaining_skips), (N - 1) - i);
 					// If trailing tokens were ignored (s > 0), do NOT allow a skip
 					// for the very first token we try to match: force a direct anchor.
 					if (!anchored && s > 0) {
