@@ -189,6 +189,13 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 	    std::min<size_t>(static_cast<size_t>(params.max_trailing_tokens_ignored), N > 0 ? N - 1 : 0);
 	for (size_t s = 0; s <= max_start; ++s) {
 		for (PNode *entry : entry_nodes) {
+
+			// You only get to skip tokens at the end of the messy
+			// address if you you've navigated the trie from root
+			// i.e. haven't jumped into the trie as a starting point
+			if (s > 0 && entry != trie.root)
+				continue;
+
 			PNode *node = entry;
 			size_t i = s;
 			uint32_t skips_used = 0; // track how many in-walk skips were used
