@@ -216,17 +216,12 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 					continue;
 				}
 
-				// No direct child. Try a lookahead skip for up to (params.skip_max_in_walk - skips_used) tokens.
-				// Skip is allowed only if the LANDING child's count is sufficiently large,
+				// No direct child. Only allow lookahead skips once we've anchored to the path.
+				// Skip is allowed only if the landing child's count is sufficiently large,
 				// to avoid skipping into very specific parts (e.g., house/flat numbers).
-				if (skips_used < params.skip_max_in_walk) {
+				if (anchored && skips_used < params.skip_max_in_walk) {
 					const uint32_t remaining_skips = params.skip_max_in_walk - skips_used;
 					size_t max_lookahead = std::min<size_t>(static_cast<size_t>(remaining_skips), (N - 1) - i);
-					// If trailing tokens were ignored (s > 0), do NOT allow a skip
-					// for the very first token we try to match: force a direct anchor.
-					if (!anchored && s > 0) {
-						max_lookahead = 0;
-					}
 					size_t delta = 0;
 					PNode *next_child = nullptr;
 					for (size_t d = 1; d <= max_lookahead; ++d) {
@@ -242,7 +237,7 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 						skips_used += static_cast<uint32_t>(delta);
 						node = next_child;
 						i += delta + 1;  // skip 'delta' tokens and consume the matched lookahead
-						anchored = true; // we're anchored after this hop
+						// anchored remains true after the initial direct match
 						if (TryAcceptCurrentNode(params, node, s, i, N, uprn_out)) {
 							return true;
 						}

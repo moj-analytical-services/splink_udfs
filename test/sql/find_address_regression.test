@@ -1,0 +1,66 @@
+# name: test/sql/find_address_regression.test
+# description: regression for pre-anchor lookahead skip (GLENELDON example)
+# group: [sql]
+
+require splink_udfs
+
+statement ok
+CREATE TEMP TABLE rows(uprn BIGINT, addr VARCHAR);
+
+statement ok
+INSERT INTO rows VALUES
+    (101, 'FLAT 1 4 GLENELDON ROAD LONDON'),
+    (102, 'FLAT 2 4 GLENELDON ROAD LONDON'),
+    (103, 'FLAT 3 4 GLENELDON ROAD LONDON'),
+    (104, 'FLAT 4 4 GLENELDON ROAD LONDON'),
+    (105, '5 GLENELDON ROAD LONDON'),
+    (106, '6 GLENELDON ROAD LONDON'),
+    (107, '4 GLENELDON ROAD LONDON'),
+    (201, '4 GLENELDON MEWS LONDON'),
+    (202, '5 GLENELDON MEWS LONDON'),
+    (203, '6 GLENELDON MEWS LONDON'),
+    (204, '7 GLENELDON MEWS LONDON'),
+    (205, '8 GLENELDON MEWS LONDON'),
+    (206, '9 GLENELDON MEWS LONDON');
+
+statement ok
+CREATE TEMP TABLE trie_blob AS
+WITH toks AS (
+  SELECT uprn, string_split(addr, ' ') AS tokens
+  FROM rows
+)
+SELECT build_suffix_trie(uprn, tokens) AS b
+FROM toks;
+
+statement ok
+CREATE MACRO tok(s) AS string_split(s, ' ');
+
+# Sanity: direct match finds the correct GLENELDON ROAD flat
+query I
+SELECT find_address(
+    tok('FLAT 3 4 GLENELDON ROAD LONDON'),
+    (SELECT b FROM trie_blob),
+    5,
+    2,
+    2,
+    5,
+    2,
+    2
+);
+----
+103
+
+# Regression: stray leading token must not match GLENELDON MEWS anymore
+query I
+SELECT find_address(
+    tok('2ND 4 GLENELDON ROAD LONDON'),
+    (SELECT b FROM trie_blob),
+    5,  -- skip_min_local_count
+    2,  -- skip_max_in_walk
+    2,  -- min_matched_tokens
+    5,  -- entry_min_local_count
+    2,  -- max_trailing_tokens_ignored
+    2   -- max_trie_entry_depth
+);
+----
+NULL
