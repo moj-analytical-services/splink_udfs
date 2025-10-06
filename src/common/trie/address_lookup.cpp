@@ -236,7 +236,7 @@ bool FindAddressExact(const ParsedTrie &trie, const std::vector<std::string> &to
 					if (next_child != nullptr) {
 						skips_used += static_cast<uint32_t>(delta);
 						node = next_child;
-						i += delta + 1;  // skip 'delta' tokens and consume the matched lookahead
+						i += delta + 1; // skip 'delta' tokens and consume the matched lookahead
 						// anchored remains true after the initial direct match
 						if (TryAcceptCurrentNode(params, node, s, i, N, uprn_out)) {
 							return true;
