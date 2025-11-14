@@ -116,3 +116,15 @@ query I
 SELECT ngrams(NULL, 2);
 ----
 NULL
+
+# Test 21: Multiple rows with string lists regression test
+query I
+WITH _data AS (
+	SELECT ['a', 'b', 'c'] AS a
+	UNION ALL
+	SELECT ['a', 'b', 'c']
+)
+SELECT ngrams(a, 2) FROM _data;
+----
+[[a, b], [b, c]]
+[[a, b], [b, c]]
