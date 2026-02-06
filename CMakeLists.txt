@@ -16,11 +16,6 @@ include_directories(src/include)
 # ---- sources ----
 set(EXTENSION_SOURCES
   src/splink_udfs_extension.cpp
-  src/functions/trie/build_suffix_trie.cpp
-  src/functions/trie/find_address.cpp
-  src/common/trie/address_lookup.cpp
-  src/common/trie/suffix_trie.cpp
-  src/common/trie/trie_cache_utils.cpp
 )
 
 # ---- build targets ----
