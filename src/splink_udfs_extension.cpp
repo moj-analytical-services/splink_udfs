@@ -8,7 +8,6 @@
 #include "phonetic/double_metaphone.hpp"
 #include "rapidfuzz/string_comparison.hpp"
 #include "arrays/ngrams.hpp"
-#include "trie/address_trie_functions.hpp"
 
 namespace duckdb {
 
@@ -209,11 +208,6 @@ static void LoadInternal(ExtensionLoader &loader) {
 	loader.RegisterFunction(damerau_set);
 
 	RegisterNgrams(loader);
-
-	// ---- trie: builder only (QCK2) ----
-	loader.RegisterFunction(GetBuildSuffixTrieAggregateSet());
-	loader.RegisterFunction(GetFindAddressFunctionSet());
-	// Removed registrations for peel/address helpers per step-by-step plan
 }
 
 void SplinkUdfsExtension::Load(ExtensionLoader &loader) {
