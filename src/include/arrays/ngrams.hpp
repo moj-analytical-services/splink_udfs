@@ -2,6 +2,10 @@
 
 #include "duckdb.hpp"
 #include "duckdb/common/types/vector.hpp"
+#include "duckdb/common/vector/array_vector.hpp"
+#include "duckdb/common/vector/constant_vector.hpp"
+#include "duckdb/common/vector/flat_vector.hpp"
+#include "duckdb/common/vector/list_vector.hpp"
 #include "duckdb/common/vector_operations/vector_operations.hpp"
 #include "duckdb/function/scalar_function.hpp"
 #include "duckdb/execution/expression_executor.hpp"
@@ -28,8 +32,10 @@ struct NgramsBindData : public FunctionData {
 };
 
 // -------------------- Binder --------------------
-static unique_ptr<FunctionData> NgramsBind(ClientContext &context, ScalarFunction &bound_function,
-                                           vector<unique_ptr<Expression>> &args) {
+static unique_ptr<FunctionData> NgramsBind(BindScalarFunctionInput &input) {
+	auto &context = input.GetClientContext();
+	auto &bound_function = input.GetBoundFunction();
+	auto &args = input.GetArguments();
 	if (args.size() != 2) {
 		throw BinderException("ngrams(list, n): expected exactly two arguments");
 	}
@@ -37,12 +43,12 @@ static unique_ptr<FunctionData> NgramsBind(ClientContext &context, ScalarFunctio
 	// First arg must be LIST(T) (or NULL, which we cast to LIST(VARCHAR))
 	LogicalType list_type;
 	LogicalType child_type;
-	if (args[0]->return_type.id() == LogicalTypeId::SQLNULL) {
+	if (args[0]->GetReturnType().id() == LogicalTypeId::SQLNULL) {
 		list_type = LogicalType::LIST(LogicalType::VARCHAR);
 		child_type = LogicalType::VARCHAR;
 		args[0] = BoundCastExpression::AddCastToType(context, std::move(args[0]), list_type);
-	} else if (args[0]->return_type.id() == LogicalTypeId::LIST) {
-		list_type = args[0]->return_type;
+	} else if (args[0]->GetReturnType().id() == LogicalTypeId::LIST) {
+		list_type = args[0]->GetReturnType();
 		child_type = ListType::GetChildType(list_type);
 	} else {
 		throw BinderException("ngrams(list, n): first argument must be a LIST");
@@ -62,9 +68,9 @@ static unique_ptr<FunctionData> NgramsBind(ClientContext &context, ScalarFunctio
 	}
 
 	// Concrete argument/return types
-	bound_function.arguments[0] = list_type;
-	bound_function.arguments[1] = LogicalType::BIGINT;
-	bound_function.return_type = LogicalType::LIST(LogicalType::ARRAY(child_type, idx_t(n)));
+	bound_function.GetArguments()[0] = list_type;
+	bound_function.GetArguments()[1] = LogicalType::BIGINT;
+	bound_function.SetReturnType(LogicalType::LIST(LogicalType::ARRAY(child_type, idx_t(n))));
 
 	return make_uniq<NgramsBindData>(idx_t(n), child_type);
 }
@@ -73,7 +79,7 @@ static unique_ptr<FunctionData> NgramsBind(ClientContext &context, ScalarFunctio
 static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) {
 	// Bind data
 	auto &fexpr = state.expr.Cast<BoundFunctionExpression>();
-	auto &bind = fexpr.bind_info->Cast<NgramsBindData>();
+	auto &bind = fexpr.BindInfo()->Cast<NgramsBindData>();
 	const idx_t n = bind.n;
 
 	const idx_t row_count = args.size();
@@ -81,7 +87,7 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 
 	// Flatten list entries
 	UnifiedVectorFormat list_uvf;
-	in_list.ToUnifiedFormat(row_count, list_uvf);
+	in_list.ToUnifiedFormat(list_uvf);
 	auto list_entries = UnifiedVectorFormat::GetData<list_entry_t>(list_uvf);
 
 	// First pass: total number of n-grams across the batch
@@ -101,30 +107,30 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 
 	// If all inputs are NULL → NULL result
 	if (all_rows_null) {
-		result.SetVectorType(VectorType::CONSTANT_VECTOR);
-		ConstantVector::SetNull(result, true);
+		ConstantVector::SetNull(result, count_t(row_count));
 		return;
 	}
 
 	// Prepare result list-of-arrays
 	result.SetVectorType(VectorType::FLAT_VECTOR);
+	FlatVector::SetSize(result, row_count);
 	ListVector::Reserve(result, total_ngrams);
 	ListVector::SetListSize(result, total_ngrams);
-	auto res_entries = FlatVector::GetData<list_entry_t>(result);
-	auto &res_validity = FlatVector::Validity(result);
+	auto res_entries = FlatVector::GetDataMutable<list_entry_t>(result);
+	auto &res_validity = FlatVector::ValidityMutable(result);
 
 	// Child vectors: LIST -> ARRAY(T, n) -> T
-	auto &array_vec = ListVector::GetEntry(result);
-	auto &array_child = ArrayVector::GetEntry(array_vec);
+	auto &array_vec = ListVector::GetChildMutable(result);
+	auto &array_child = ArrayVector::GetChildMutable(array_vec);
 
 	// Make sure the array child is a flat, writable vector of length total_ngrams * n
-	array_child.Flatten(total_ngrams * n);
+	array_child.Flatten();
 
 	// Access input child once
-	auto &input_child = ListVector::GetEntry(in_list);
+	auto &input_child = ListVector::GetChild(in_list);
 
 	// We'll copy n elements at a time using a selection vector
-	SelectionVector sel(STANDARD_VECTOR_SIZE);
+	SelectionVector sel(n);
 
 	idx_t next_array_idx = 0; // number of arrays emitted so far
 	idx_t next_child_idx = 0; // number of scalar elements written into array_child
@@ -168,7 +174,7 @@ static void NgramsExec(DataChunk &args, ExpressionState &state, Vector &result) 
 static ScalarFunction MakeFunc() {
 	auto list_any = LogicalType::LIST(LogicalType::ANY);
 	ScalarFunction fun("ngrams", {list_any, LogicalType::BIGINT}, list_any, NgramsExec, NgramsBind);
-	fun.null_handling = FunctionNullHandling::SPECIAL_HANDLING;
+	fun.SetNullHandling(FunctionNullHandling::SPECIAL_HANDLING);
 	return fun;
 }
 

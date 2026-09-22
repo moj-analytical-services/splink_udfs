@@ -10,9 +10,6 @@
 #include <cstdint>
 #include <cstring>
 
-// Use fast_mem.hpp for DuckDB memory utilities
-#include "duckdb/common/fast_mem.hpp"
-
 namespace phonetic {
 
 // Soundex constants – kept in the header because callers may need them.
@@ -58,7 +55,7 @@ inline uint8_t Soundex::ClassCode(char ch) {
 }
 
 inline const char *Soundex::Encode(const char *str) {
-	duckdb::FastMemset(buffer_, '0', length_);
+	std::memset(buffer_, '0', length_);
 	buffer_[length_] = '\0';
 
 	// Safely find the first ASCII letter, skipping all other bytes.
