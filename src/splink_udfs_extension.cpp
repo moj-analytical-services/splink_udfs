@@ -74,7 +74,7 @@ static void SoundexScalar(DataChunk &data_chunk, ExpressionState & /*state*/, Ve
 			// Return "0000" or the desired empty-string result
 			return StringVector::AddString(result, "0000");
 		}
-		const char *code = encoder.Encode(val.GetDataUnsafe());
+		const char *code = encoder.Encode(std::string_view(val.GetDataUnsafe(), val.GetSize()));
 		return MakeStringResult(result, code);
 	});
 }

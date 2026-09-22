@@ -175,3 +175,53 @@ query I
 SELECT soundex(' ');
 ----
 0000
+
+# Heap-backed strings are not NUL-terminated. Read only the current row's bytes.
+query TT
+SELECT soundex(s), expected
+FROM (VALUES
+    ('aaaaaaaaaaaaa', 'A000'),
+    ('11111111111111111111111111', '0000'),
+    ('AAAAAAAAAAAAABBBBBBBBBB', 'A100'),
+    ('bbbbbbbbbbbbc', 'B200')
+) inputs(s, expected);
+----
+A000	A000
+0000	0000
+A100	A100
+B200	B200
+
+# Exercise inline and heap-backed strings, NULLs and encoder reuse across chunks.
+statement ok
+CREATE TABLE soundex_inputs AS
+SELECT i,
+       CASE i % 6
+           WHEN 0 THEN repeat('a', 12 + i % 17)
+           WHEN 1 THEN repeat('1', 12 + i % 17)
+           WHEN 2 THEN repeat('b', 12 + i % 17) || 'c'
+           WHEN 3 THEN 'a'
+           WHEN 4 THEN ''
+           ELSE NULL
+       END AS s,
+       CASE i % 6
+           WHEN 0 THEN 'A000'
+           WHEN 1 THEN '0000'
+           WHEN 2 THEN 'B200'
+           WHEN 3 THEN 'A000'
+           WHEN 4 THEN '0000'
+           ELSE NULL
+       END AS expected
+FROM range(10000) t(i);
+
+query I
+SELECT count(*) FROM soundex_inputs
+WHERE soundex(s) IS DISTINCT FROM expected;
+----
+0
+
+query I
+SELECT count(*)
+FROM (SELECT * FROM soundex_inputs WHERE i % 3 = 0) filtered
+WHERE soundex(s) IS DISTINCT FROM expected;
+----
+0

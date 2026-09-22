@@ -8,10 +8,13 @@
 // DuckDB vendored header: typedefs are global, functions/enums are in duckdb::
 #include <utf8proc.hpp>
 
+// Deliberately match the upstream header's global API in this compatibility shim.
+// NOLINTBEGIN(google-global-names-in-headers)
 using duckdb::utf8proc_errmsg;
 using duckdb::utf8proc_iterate;
 using duckdb::utf8proc_map;
 using duckdb::utf8proc_option_t;
+// NOLINTEND(google-global-names-in-headers)
 
 // Mirror the flags so callers can use the usual names
 constexpr auto UTF8PROC_NULLTERM = duckdb::UTF8PROC_NULLTERM;

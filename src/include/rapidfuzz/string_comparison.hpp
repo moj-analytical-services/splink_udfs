@@ -39,22 +39,27 @@ static std::u32string Utf8ToU32(std::string_view in) {
 /*  Cheap "obviously‑different" guard                                        */
 /* ------------------------------------------------------------------------- */
 inline bool DefinitelyAboveK(std::string_view a, std::string_view b, int k) {
-	if (k < 0)
+	if (k < 0) {
 		return false; // guard disabled → fall through
+	}
 
-	if (std::abs(static_cast<int>(a.size()) - static_cast<int>(b.size())) > k)
+	if (std::abs(static_cast<int>(a.size()) - static_cast<int>(b.size())) > k) {
 		return true;
+	}
 
 	std::array<int, 256> hist {};
 
-	for (unsigned char ch : a)
+	for (unsigned char ch : a) {
 		++hist[ch];
-	for (unsigned char ch : b)
+	}
+	for (unsigned char ch : b) {
 		--hist[ch];
+	}
 
 	int imbalance = 0;
-	for (int v : hist)
+	for (int v : hist) {
 		imbalance += std::abs(v);
+	}
 
 	/*  Each edit can fix at most two histogram mismatches          */
 	return (imbalance >> 1) > k; // divide by 2 without fp
@@ -62,23 +67,28 @@ inline bool DefinitelyAboveK(std::string_view a, std::string_view b, int k) {
 
 // Overload for UTF-32 strings (Unicode-aware histogram guard)
 inline bool DefinitelyAboveK(const std::u32string &a, const std::u32string &b, int k) {
-	if (k < 0)
+	if (k < 0) {
 		return false; // guard disabled → fall through
+	}
 
-	if (std::abs(static_cast<int>(a.size()) - static_cast<int>(b.size())) > k)
+	if (std::abs(static_cast<int>(a.size()) - static_cast<int>(b.size())) > k) {
 		return true;
+	}
 
 	// For Unicode, we use a map instead of fixed array since char32_t range is large
 	std::unordered_map<char32_t, int> hist;
 
-	for (char32_t ch : a)
+	for (char32_t ch : a) {
 		++hist[ch];
-	for (char32_t ch : b)
+	}
+	for (char32_t ch : b) {
 		--hist[ch];
+	}
 
 	int imbalance = 0;
-	for (const auto &[ch, count] : hist)
+	for (const auto &[ch, count] : hist) {
 		imbalance += std::abs(count);
+	}
 
 	/*  Each edit can fix at most two histogram mismatches          */
 	return (imbalance >> 1) > k; // divide by 2 without fp
