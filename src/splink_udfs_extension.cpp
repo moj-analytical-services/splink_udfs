@@ -1,6 +1,9 @@
 #define DUCKDB_EXTENSION_MAIN // must precede DuckDB headers
 #include "splink_udfs_extension.hpp"
 #include "duckdb.hpp"
+#include "duckdb/common/vector/flat_vector.hpp"
+#include "duckdb/common/vector/list_vector.hpp"
+#include "duckdb/common/vector/string_vector.hpp"
 #include "duckdb/function/scalar_function.hpp"
 
 #include "phonetic/soundex.hpp"
@@ -26,7 +29,7 @@ static string_t MakeStringResult(Vector &result, const char *cstr) {
 // 2-argument version
 static void LevenshteinScalar(DataChunk &args, ExpressionState &state, Vector &result) {
 	BinaryExecutor::Execute<string_t, string_t, int64_t>(
-	    args.data[0], args.data[1], result, args.size(), [](string_t str_a, string_t str_b) {
+	    args.data[0], args.data[1], result, [](string_t str_a, string_t str_b) {
 		    return LevenshteinDistance(std::string_view(str_a.GetDataUnsafe(), str_a.GetSize()),
 		                               std::string_view(str_b.GetDataUnsafe(), str_b.GetSize()));
 	    });
@@ -35,8 +38,7 @@ static void LevenshteinScalar(DataChunk &args, ExpressionState &state, Vector &r
 // 3-argument version with threshold
 static void LevenshteinScalarWithThreshold(DataChunk &args, ExpressionState &state, Vector &result) {
 	TernaryExecutor::Execute<string_t, string_t, int64_t, int64_t>(
-	    args.data[0], args.data[1], args.data[2], result, args.size(),
-	    [](string_t str_a, string_t str_b, int64_t max_dist) {
+	    args.data[0], args.data[1], args.data[2], result, [](string_t str_a, string_t str_b, int64_t max_dist) {
 		    return LevenshteinDistance(std::string_view(str_a.GetDataUnsafe(), str_a.GetSize()),
 		                               std::string_view(str_b.GetDataUnsafe(), str_b.GetSize()), max_dist);
 	    });
@@ -45,7 +47,7 @@ static void LevenshteinScalarWithThreshold(DataChunk &args, ExpressionState &sta
 // 2-argument version
 static void DamerauLevenshteinScalar(DataChunk &args, ExpressionState &state, Vector &result) {
 	BinaryExecutor::Execute<string_t, string_t, int64_t>(
-	    args.data[0], args.data[1], result, args.size(), [](string_t str_a, string_t str_b) {
+	    args.data[0], args.data[1], result, [](string_t str_a, string_t str_b) {
 		    return DamerauLevenshteinDistance(std::string_view(str_a.GetDataUnsafe(), str_a.GetSize()),
 		                                      std::string_view(str_b.GetDataUnsafe(), str_b.GetSize()));
 	    });
@@ -54,37 +56,33 @@ static void DamerauLevenshteinScalar(DataChunk &args, ExpressionState &state, Ve
 // 3-argument version with threshold
 static void DamerauLevenshteinScalarWithThreshold(DataChunk &args, ExpressionState &state, Vector &result) {
 	TernaryExecutor::Execute<string_t, string_t, int64_t, int64_t>(
-	    args.data[0], args.data[1], args.data[2], result, args.size(),
-	    [](string_t str_a, string_t str_b, int64_t max_dist) {
+	    args.data[0], args.data[1], args.data[2], result, [](string_t str_a, string_t str_b, int64_t max_dist) {
 		    return DamerauLevenshteinDistance(std::string_view(str_a.GetDataUnsafe(), str_a.GetSize()),
 		                                      std::string_view(str_b.GetDataUnsafe(), str_b.GetSize()), max_dist);
 	    });
 }
 
 static void SoundexScalar(DataChunk &data_chunk, ExpressionState & /*state*/, Vector &result) {
-	// Use idx_t for row counts
-	const idx_t count = data_chunk.size();
 	auto &input = data_chunk.data[0];
 
 	// Reusable encoder instance per chunk
 	phonetic::Soundex encoder;
 
-	UnaryExecutor::Execute<string_t, string_t>(input, result, count, [&](const string_t &val) -> string_t {
+	UnaryExecutor::Execute<string_t, string_t>(input, result, [&](const string_t &val) -> string_t {
 		// Handle empty string edge case explicitly
 		if (val.GetSize() == 0) {
 			// Return "0000" or the desired empty-string result
 			return StringVector::AddString(result, "0000");
 		}
-		const char *code = encoder.Encode(val.GetDataUnsafe());
+		const char *code = encoder.Encode(std::string_view(val.GetDataUnsafe(), val.GetSize()));
 		return MakeStringResult(result, code);
 	});
 }
 
 static void StripDiacriticsScalar(DataChunk &data_chunk, ExpressionState & /*state*/, Vector &result) {
-	const idx_t count = data_chunk.size();
 	auto &input = data_chunk.data[0];
 
-	UnaryExecutor::Execute<string_t, string_t>(input, result, count, [&](const string_t &val) -> string_t {
+	UnaryExecutor::Execute<string_t, string_t>(input, result, [&](const string_t &val) -> string_t {
 		if (val.GetSize() == 0) {
 			return StringVector::AddString(result, "");
 		}
@@ -97,10 +95,9 @@ static void StripDiacriticsScalar(DataChunk &data_chunk, ExpressionState & /*sta
 }
 
 static void UnaccentScalar(DataChunk &data_chunk, ExpressionState & /*state*/, Vector &result) {
-	const idx_t count = data_chunk.size();
 	auto &input = data_chunk.data[0];
 
-	UnaryExecutor::Execute<string_t, string_t>(input, result, count, [&](const string_t &val) -> string_t {
+	UnaryExecutor::Execute<string_t, string_t>(input, result, [&](const string_t &val) -> string_t {
 		if (val.GetSize() == 0) {
 			return StringVector::AddString(result, "");
 		}
@@ -121,30 +118,33 @@ static void DoubleMetaphoneScalarList(DataChunk &data_chunk, ExpressionState & /
 	auto &input = data_chunk.data[0];
 
 	result.SetVectorType(VectorType::FLAT_VECTOR);
+	FlatVector::SetSize(result, count);
 	// Create/obtain the child vector that will store individual strings
-	auto &child = ListVector::GetEntry(result);
 	ListVector::Reserve(result, count * 2); // heuristic upper bound (primary+alt per row)
+	auto &child = ListVector::GetChildMutable(result);
 
 	// Track where we are writing inside the child vector
 	idx_t child_offset = 0;
 
 	DoubleMetaphone encoder;
-	string_t *child_strings = FlatVector::GetData<string_t>(child);
-	auto *list_entries = FlatVector::GetData<list_entry_t>(result);
+	string_t *child_strings = FlatVector::GetDataMutable<string_t>(child);
+	auto *list_entries = FlatVector::GetDataMutable<list_entry_t>(result);
 
 	UnifiedVectorFormat input_format;
-	input.ToUnifiedFormat(count, input_format);
+	input.ToUnifiedFormat(input_format);
+	auto input_strings = UnifiedVectorFormat::GetData<string_t>(input_format);
 
 	for (idx_t row = 0; row < count; ++row) {
 		auto input_idx = input_format.sel->get_index(row);
 
 		if (!input_format.validity.RowIsValid(input_idx)) {
 			FlatVector::SetNull(result, row, true);
+			list_entries[row] = {child_offset, 0};
 			continue;
 		}
 
 		// Read input
-		string_t in = ((string_t *)input_format.data)[input_idx];
+		string_t in = input_strings[input_idx];
 		if (in.GetSize() == 0) {
 			// Empty string case - return empty list
 			list_entry_t &entry = list_entries[row];
