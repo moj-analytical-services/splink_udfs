@@ -323,8 +323,9 @@ private:
 				if (b2 == 0x9F || b2 == 0x9E) { // 0xC4 0x9F = ğ, 0xC4 0x9E = Ğ
 					// NEW: if this is the very first letter, also suppress the first
 					// following vowel so we don't get a leading 'A'.
-					if (out.empty())
+					if (out.empty()) {
 						suppress_first_vowel = true;
+					}
 					i += 2;
 					continue;
 				}
@@ -669,7 +670,8 @@ private:
 		if (idx == static_cast<int32_t>(val.size()) - 3 && Contains(val, idx - 1, 4, {"ILLO", "ILLA", "ALLE"})) {
 			return true;
 		}
-		return (Contains(val, val.size() - 2, 2, {"AS", "OS"}) || Contains(val, val.size() - 1, 1, {"A", "O"})) &&
+		return (Contains(val, static_cast<int32_t>(val.size()) - 2, 2, {"AS", "OS"}) ||
+		        Contains(val, static_cast<int32_t>(val.size()) - 1, 1, {"A", "O"})) &&
 		       Contains(val, idx - 1, 4, {"ALLE"});
 	}
 

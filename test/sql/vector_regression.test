@@ -1,0 +1,161 @@
+# name: test/sql/vector_regression.test
+# description: Exercise nested and variable-sized outputs across filtered inputs and multiple chunks
+# group: [sql]
+
+require splink_udfs
+
+statement ok
+CREATE TABLE vector_inputs AS
+SELECT i,
+       CASE i % 4
+           WHEN 0 THEN NULL::BIGINT[]
+           WHEN 1 THEN []::BIGINT[]
+           WHEN 2 THEN [i]
+           ELSE [i, NULL, i + 2]
+       END AS items,
+       CASE i % 4
+           WHEN 0 THEN NULL
+           WHEN 1 THEN ''
+           WHEN 2 THEN 'Smith'
+           ELSE 'Schmidt'
+       END AS name,
+       CASE i % 4
+           WHEN 0 THEN NULL
+           WHEN 1 THEN ''
+           WHEN 2 THEN 'Jürgen'
+           ELSE 'Ærø'
+       END AS accented
+FROM range(10000) t(i);
+
+# Unary executors must preserve cardinality and NULLs across chunks.
+query I
+SELECT count(*)
+FROM vector_inputs
+WHERE soundex(name) IS DISTINCT FROM
+      CASE i % 4 WHEN 0 THEN NULL WHEN 1 THEN '0000' ELSE 'S530' END
+   OR strip_diacritics(accented) IS DISTINCT FROM
+      CASE i % 4 WHEN 0 THEN NULL WHEN 1 THEN '' WHEN 2 THEN 'Jurgen' ELSE 'Ærø' END
+   OR unaccent(accented) IS DISTINCT FROM
+      CASE i % 4 WHEN 0 THEN NULL WHEN 1 THEN '' WHEN 2 THEN 'Jurgen' ELSE 'AEro' END;
+----
+0
+
+# Binary and ternary executors mix constant and varying arguments.
+query I
+SELECT count(*)
+FROM (
+    SELECT name,
+           CASE i % 4 WHEN 0 THEN NULL WHEN 1 THEN 5 WHEN 2 THEN 0 ELSE 4 END AS distance,
+           CASE i % 4 WHEN 0 THEN NULL WHEN 2 THEN 0 ELSE 3 END AS capped_distance
+    FROM vector_inputs
+) expected
+WHERE levenshtein('Smith', name) IS DISTINCT FROM distance
+   OR damerau_levenshtein(name, 'Smith') IS DISTINCT FROM distance
+   OR levenshtein(name, 'Smith', 2) IS DISTINCT FROM capped_distance
+   OR damerau_levenshtein('Smith', name, 2) IS DISTINCT FROM capped_distance;
+----
+0
+
+# Mixed NULL and empty lists spanning multiple input chunks.
+query I
+SELECT count(*)
+FROM vector_inputs
+WHERE ngrams(items, 2) IS DISTINCT FROM
+      CASE i % 4
+          WHEN 0 THEN NULL::BIGINT[2][]
+          WHEN 1 THEN []::BIGINT[2][]
+          WHEN 2 THEN []::BIGINT[2][]
+          ELSE [array_value(i, NULL::BIGINT), array_value(NULL::BIGINT, i + 2)]
+      END;
+----
+0
+
+# Each input chunk produces more than STANDARD_VECTOR_SIZE output arrays.
+query I
+SELECT count(*)
+FROM vector_inputs
+WHERE ngrams([i, i + 1, i + 2, i + 3, i + 4], 2) IS DISTINCT FROM
+      [array_value(i, i + 1), array_value(i + 1, i + 2),
+       array_value(i + 2, i + 3), array_value(i + 3, i + 4)];
+----
+0
+
+# Filter a stored list column before evaluating the function.
+query I
+SELECT count(*)
+FROM (SELECT * FROM vector_inputs WHERE i % 3 = 0) filtered
+WHERE ngrams(items, 2) IS DISTINCT FROM
+      CASE i % 4
+          WHEN 0 THEN NULL::BIGINT[2][]
+          WHEN 1 THEN []::BIGINT[2][]
+          WHEN 2 THEN []::BIGINT[2][]
+          ELSE [array_value(i, NULL::BIGINT), array_value(NULL::BIGINT, i + 2)]
+      END;
+----
+0
+
+query I
+SELECT count(*)
+FROM vector_inputs
+WHERE double_metaphone(name) IS DISTINCT FROM
+      CASE i % 4
+          WHEN 0 THEN NULL::VARCHAR[]
+          WHEN 1 THEN []::VARCHAR[]
+          WHEN 2 THEN ['SM0', 'XMT']
+          ELSE ['XMT', 'SMT']
+      END;
+----
+0
+
+query I
+SELECT count(*)
+FROM (SELECT * FROM vector_inputs WHERE i % 3 = 0) filtered
+WHERE double_metaphone(name) IS DISTINCT FROM
+      CASE i % 4
+          WHEN 0 THEN NULL::VARCHAR[]
+          WHEN 1 THEN []::VARCHAR[]
+          WHEN 2 THEN ['SM0', 'XMT']
+          ELSE ['XMT', 'SMT']
+      END;
+----
+0
+
+# Copy nested list children, preserving NULL and empty lists.
+query I
+SELECT ngrams([[1, 2], NULL, []]::INTEGER[][], 2);
+----
+[[[1, 2], NULL], [NULL, []]]
+
+# A single n-gram may contain more than STANDARD_VECTOR_SIZE elements.
+query I
+SELECT ngrams(range(2050), 2050) = [range(2050)::BIGINT[2050]];
+----
+true
+
+query III
+SELECT len(grams), grams[1][2050], grams[2][2050]
+FROM (SELECT ngrams(range(2051), 2050) AS grams);
+----
+2	2049	2050
+
+statement error
+SELECT ngrams([1, 2], 0);
+----
+n must be positive
+
+statement error
+SELECT ngrams([1, 2], NULL);
+----
+n cannot be NULL
+
+statement error
+SELECT ngrams(items, i) FROM vector_inputs;
+----
+n must be a constant
+
+# The 2.0 distribution intentionally excludes the retired address-trie API.
+query I
+SELECT count(*) FROM duckdb_functions()
+WHERE function_name IN ('build_suffix_trie', 'find_address');
+----
+0

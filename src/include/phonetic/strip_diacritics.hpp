@@ -37,7 +37,6 @@ inline std::string StripDiacritics(const std::string &utf8) {
 }
 
 inline std::string Unaccent(const std::string &utf8) {
-
 	std::string result = StripDiacritics(utf8);
 
 	static const std::vector<std::pair<std::string, std::string>> REPLACEMENTS = {// Latin Extended-A

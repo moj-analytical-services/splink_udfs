@@ -5,18 +5,24 @@ The `splink_udfs` extension provides a collection of user-defined functions for 
 This repo is based on the [DuckDB Extension Template](https://github.com/duckdb/extension-template)
 ## Installation
 
-This is a custom DuckDB extension and not (yet) part of the official community extensions.
-
-Once built and compiled locally, you can load it like this:
+The published extension is available from the [DuckDB community extension repository](https://duckdb.org/community_extensions/extensions/splink_udfs):
 
 ```sql
-.load '/path/to/splink_udfs.duckdb_extension';
+INSTALL splink_udfs FROM community;
+LOAD splink_udfs;
+SELECT soundex('Robert'); -- returns 'R163'
 ```
 
-If you're using the DuckDB CLI or embedded DuckDB in your project, simply run:
+This branch targets the upcoming DuckDB 2.0 release (`v2.0-cyanoptera`). The community descriptor currently points to the older revision [`cf00056`](https://github.com/moj-analytical-services/splink_udfs/commit/cf00056f887486d0aee0a853a764f9775aa40438); installing from community does not install this branch. This branch intentionally removes `build_suffix_trie` and `find_address`, which are still present in the older published revision.
+
+For a locally built extension, use the matching DuckDB binary with unsigned extensions enabled:
+
+```bash
+./build/release/duckdb -unsigned
+```
 
 ```sql
-SELECT soundex('Robert'); -- returns 'R163'
+LOAD 'build/release/extension/splink_udfs/splink_udfs.duckdb_extension';
 ```
 
 ## API
@@ -95,7 +101,7 @@ SELECT
 -- returns 'Ærø', 'AEro'
 
 -- Double Metaphone examples
-SELECT double_metaphone('Smith'); -- returns ['SM0']
+SELECT double_metaphone('Smith'); -- returns ['SM0', 'XMT']
 SELECT double_metaphone('Schmidt'); -- returns ['XMT', 'SMT']
 SELECT double_metaphone('Johnson'); -- returns ['JNSN']
 SELECT double_metaphone('Jackson'); -- returns ['JKSN']
@@ -137,10 +143,12 @@ You’ll find the test cases in the `test/sql/` directory.
 
 ## Build Instructions
 
-To build the extension:
+Build with CMake, Ninja and a C++ compiler. Initialise the pinned submodules first; this branch pins DuckDB to a commit on `v2.0-cyanoptera` and uses the current extension CI tools:
 
 ```bash
-GEN=ninja make
+git submodule update --init --recursive
+GEN=ninja make release
+make test
 ```
 
 This produces:
@@ -148,12 +156,17 @@ This produces:
 * `build/release/duckdb` — DuckDB shell with extension loaded
 * `build/release/extension/splink_udfs/splink_udfs.duckdb_extension` — loadable binary
 
-To run:
+To run the statically linked extension:
 
 ```bash
 ./build/release/duckdb
-.load 'build/release/extension/splink_udfs/splink_udfs.duckdb_extension'
 ```
+
+### Preparing the DuckDB 2.0 community build
+
+CI builds this branch against `v2.0-cyanoptera` across the default distribution platforms, and also checks compatibility with DuckDB `main`. It does not publish extensions.
+
+After committing and pushing the compatibility changes and verifying CI, submit a PR to [`duckdb/community-extensions`](https://github.com/duckdb/community-extensions/blob/main/extensions/splink_udfs/description.yml) adding `repo.ref_next` with the tested commit SHA. Leave `repo.ref` unchanged so existing DuckDB releases continue to use the current published source. The intentional removal of `build_suffix_trie` and `find_address` should be included in that PR's release notes. See the [community extension update guide](https://github.com/duckdb/community-extensions/blob/main/UPDATING.md#update-path-before-duckdb-release).
 
 ## License
 
