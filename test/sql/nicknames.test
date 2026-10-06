@@ -1,0 +1,191 @@
+# name: test/sql/nicknames.test
+# description: Built-in nickname lookup, including Unicode, NULLs and vectorized execution
+# group: [sql]
+
+require splink_udfs
+
+query I
+SELECT _get_nicknames('Robert', 'v1');
+----
+[bert, bertie, bob, bobbie, bobby, rab, rob, robbie, robby, robin]
+
+query I
+SELECT _get_nicknames('  ROBERT  ', 'v1') = _get_nicknames('robert', 'v1');
+----
+true
+
+query III
+SELECT _get_nicknames('unknown-person', 'v1'), _get_nicknames('', 'v1'), _get_nicknames('   ', 'v1');
+----
+[]	[]	[]
+
+query I
+SELECT _get_nicknames(NULL::VARCHAR, 'v1');
+----
+NULL
+
+query I
+SELECT typeof(_get_nicknames('Robert', 'v1'));
+----
+VARCHAR[]
+
+query I
+SELECT _get_nicknames('ALEJANDRO', 'v1');
+----
+[ale, alex, jandro, jano, álex]
+
+query I
+SELECT _get_nicknames('ANTÓNIO', 'v1') = ['toni', 'tó']
+   AND _get_nicknames('Antônio', 'v1') = ['tom', 'tonho', 'toninho']
+   AND _get_nicknames('Antonio', 'v1') IS DISTINCT FROM _get_nicknames('António', 'v1');
+----
+true
+
+# DuckDB trim also removes Unicode space separators, such as a non-breaking space.
+query I
+SELECT _get_nicknames(chr(160) || 'ROBERT' || chr(160), 'v1') = _get_nicknames('Robert', 'v1');
+----
+true
+
+query I
+SELECT _get_nicknames('Rob', 'v1');
+----
+[]
+
+query I
+SELECT _get_nicknames('ЕКАТЕРИНА', 'v1') = ['катя']
+   AND _get_nicknames('НАТАЛЬЯ', 'v1') = ['наташа']
+   AND _get_nicknames('אברהם', 'v1') = ['אבי']
+   AND _get_nicknames('ალექსანდრე', 'v1') = ['სანდრო']
+   AND _get_nicknames('ΑΛΈΞΑΝΔΡΟΣ', 'v1') = ['αλέξης']
+   AND _get_nicknames('Αλέξανδρος', 'v1') = _get_nicknames('αλέξανδροσ', 'v1');
+----
+true
+
+query II
+SELECT count(*), sum(len(_get_nicknames(name, 'v1'))) FROM (
+    SELECT DISTINCT lower(upper(trim(name))) AS name FROM read_csv('data/nicknames/v1.csv')
+);
+----
+1106	1993
+
+statement error
+SELECT _get_nicknames();
+----
+No function matches
+
+statement error
+SELECT _get_nicknames(['Robert'], 'v1');
+----
+No function matches
+
+# Compare every CSV mapping against an independently aggregated SQL lookup.
+statement ok
+CREATE TABLE nickname_reference AS
+SELECT lower(upper(trim(name))) AS name,
+       list_sort(list_distinct(list(lower(trim(nickname))))) AS nicknames
+FROM read_csv('data/nicknames/v1.csv')
+GROUP BY 1;
+
+query I
+SELECT count(*) FROM nickname_reference
+WHERE _get_nicknames(name, 'v1') IS DISTINCT FROM nicknames
+   OR _get_nicknames(upper(name), 'v1') IS DISTINCT FROM nicknames
+   OR _get_nicknames(' ' || name || ' ', 'v1') IS DISTINCT FROM nicknames;
+----
+0
+
+statement ok
+CREATE TABLE nickname_inputs AS
+SELECT i,
+       CASE i % 7
+         WHEN 0 THEN NULL::VARCHAR
+         WHEN 1 THEN ''
+         WHEN 2 THEN 'unknown-person'
+         WHEN 3 THEN '  ROBERT  '
+         WHEN 4 THEN 'ANTÓNIO'
+         WHEN 5 THEN 'Concepción'
+         ELSE 'Abigail'
+       END AS name
+FROM range(10000) t(i);
+
+query I
+SELECT count(*)
+FROM nickname_inputs i
+LEFT JOIN nickname_reference r ON lower(upper(trim(i.name))) = r.name
+WHERE _get_nicknames(i.name, 'v1') IS DISTINCT FROM
+      CASE WHEN i.name IS NULL THEN NULL::VARCHAR[] ELSE coalesce(r.nicknames, []::VARCHAR[]) END;
+----
+0
+
+# A filter produces selected inputs and the result is consumed as a nested list.
+query I
+SELECT count(*)
+FROM (SELECT * FROM nickname_inputs WHERE i % 3 = 0) i
+LEFT JOIN nickname_reference r ON lower(upper(trim(i.name))) = r.name
+WHERE list_transform(_get_nicknames(i.name, 'v1'), lambda x: upper(x)) IS DISTINCT FROM
+      list_transform(CASE WHEN i.name IS NULL THEN NULL::VARCHAR[]
+                          ELSE coalesce(r.nicknames, []::VARCHAR[]) END, lambda x: upper(x));
+----
+0
+
+# Constant results and their child lists remain valid across multiple chunks.
+query I
+SELECT count(*) FROM range(10000)
+WHERE _get_nicknames('Robert', 'v1') IS DISTINCT FROM ['bert', 'bertie', 'bob', 'bobbie', 'bobby', 'rab', 'rob', 'robbie', 'robby', 'robin'];
+----
+0
+
+query I
+SELECT list(nickname ORDER BY nickname) FROM unnest(_get_nicknames('Robert', 'v1')) t(nickname);
+----
+[bert, bertie, bob, bobbie, bobby, rab, rob, robbie, robby, robin]
+
+statement ok
+PRAGMA enable_verification;
+
+query I
+SELECT count(*) FROM nickname_inputs WHERE _get_nicknames(name, 'v1') IS NULL;
+----
+1429
+
+statement error
+SELECT _get_nicknames('Robert');
+----
+No function matches
+
+statement error
+SELECT _get_nicknames('Robert', 'unknown');
+----
+unknown version
+
+statement error
+SELECT _get_nicknames(NULL, 'unknown');
+----
+unknown version
+
+statement error
+SELECT _get_nicknames('Robert', NULL);
+----
+version must be a non-NULL constant
+
+statement error
+SELECT _get_nicknames('Robert', version) FROM (VALUES ('v1')) t(version);
+----
+version must be a non-NULL constant resolved during binding
+
+query I
+SELECT _get_nicknames('Robert', 'v' || '1') = _get_nicknames('Robert', 'v1');
+----
+true
+
+query IIII
+SELECT version, upstream_commit, mapping_sha256, mapping_count FROM nickname_lookup_versions();
+----
+v1	945cdc0e4fa428b2f323198e7b13f6a66de74b26	1738f9da93a952a88e06e4140214bb9bcc65e6fcea5027e41916d11fb70747aa	1993
+
+# The public spelling is deliberately not registered during the private beta.
+statement error
+SELECT get_nicknames('Robert', 'v1');
+----
+does not exist
