@@ -43,3 +43,10 @@ install(
   EXPORT "${DUCKDB_EXPORT_SET}"
   LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
   ARCHIVE DESTINATION "${INSTALL_LIB_DIR}")
+
+# Synthetic versions are exclusively for local ownership/delta tests.
+set(SPLINK_NICKNAME_TEST_HEADER "" CACHE FILEPATH "Generated test-only nickname header")
+if(SPLINK_NICKNAME_TEST_HEADER)
+  target_compile_definitions(splink_udfs_extension PRIVATE SPLINK_NICKNAME_TEST_HEADER="${SPLINK_NICKNAME_TEST_HEADER}")
+  target_compile_definitions(splink_udfs_loadable_extension PRIVATE SPLINK_NICKNAME_TEST_HEADER="${SPLINK_NICKNAME_TEST_HEADER}")
+endif()

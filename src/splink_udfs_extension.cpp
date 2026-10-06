@@ -11,6 +11,7 @@
 #include "phonetic/double_metaphone.hpp"
 #include "rapidfuzz/string_comparison.hpp"
 #include "arrays/ngrams.hpp"
+#include "nicknames/get_nicknames.hpp"
 
 namespace duckdb {
 
@@ -181,6 +182,7 @@ static void DoubleMetaphoneScalarList(DataChunk &data_chunk, ExpressionState & /
 }
 
 static void LoadInternal(ExtensionLoader &loader) {
+	nicknames::Register(loader);
 	loader.RegisterFunction(ScalarFunction("soundex", {LogicalType::VARCHAR}, LogicalType::VARCHAR, SoundexScalar));
 
 	loader.RegisterFunction(
