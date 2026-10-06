@@ -1,12 +1,17 @@
 """Small native DuckDB C API helper for nickname version ownership tests."""
+
 import ctypes as c
 import time
 
 
 class Result(c.Structure):
     _fields_ = [
-        ("column_count", c.c_uint64), ("row_count", c.c_uint64), ("rows_changed", c.c_uint64),
-        ("columns", c.c_void_p), ("error", c.c_void_p), ("internal", c.c_void_p),
+        ("column_count", c.c_uint64),
+        ("row_count", c.c_uint64),
+        ("rows_changed", c.c_uint64),
+        ("columns", c.c_void_p),
+        ("error", c.c_void_p),
+        ("internal", c.c_void_p),
     ]
 
 
