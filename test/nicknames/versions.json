@@ -1,0 +1,30 @@
+{
+  "format": 1,
+  "versions": [
+    {
+      "behavior_sha256": "4d83e6c753f136f6504fe8f66def11421f44758a48ff93ba432e0111465afa39",
+      "upstream_repository": "synthetic-test-fixture",
+      "upstream_commit": "not-an-upstream-version",
+      "source_file": "fixture-a.csv",
+      "version": "fixture_a",
+      "parent": null,
+      "behavior": "../../data/nicknames/behavior-v1.json",
+      "mapping_sha256": "5603132786cf79b224198013d2a083c6d0d610d949371533d2088e3ec140df9b",
+      "mapping_count": 3,
+      "baseline": "fixture-a.csv"
+    },
+    {
+      "behavior_sha256": "4d83e6c753f136f6504fe8f66def11421f44758a48ff93ba432e0111465afa39",
+      "upstream_repository": "synthetic-test-fixture",
+      "upstream_commit": "not-an-upstream-version",
+      "source_file": "fixture-b-add.csv + fixture-b-remove.csv",
+      "version": "fixture_b",
+      "parent": "fixture_a",
+      "behavior": "../../data/nicknames/behavior-v1.json",
+      "mapping_sha256": "88e070ed3c9805b7bbc45b45249bd63f323c54867ea6b5cec5b1149bcf20cbd6",
+      "mapping_count": 3,
+      "additions": "fixture-b-add.csv",
+      "removals": "fixture-b-remove.csv"
+    }
+  ]
+}

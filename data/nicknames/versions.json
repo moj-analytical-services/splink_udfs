@@ -1,0 +1,18 @@
+{
+  "format": 1,
+  "versions": [
+    {
+      "version": "v1",
+      "parent": null,
+      "baseline": "v1.csv",
+      "behavior": "behavior-v1.json",
+      "behavior_sha256": "4d83e6c753f136f6504fe8f66def11421f44758a48ff93ba432e0111465afa39",
+      "upstream_repository": "RobinL/nicknames",
+      "upstream_commit": "945cdc0e4fa428b2f323198e7b13f6a66de74b26",
+      "source_file": "nicknames.csv",
+      "source_sha256": "c1dbe627feddf6e7bb1cf3d5b3dffcc33bb0b412676d6c804cfed7509adda019",
+      "mapping_sha256": "1738f9da93a952a88e06e4140214bb9bcc65e6fcea5027e41916d11fb70747aa",
+      "mapping_count": 1993
+    }
+  ]
+}
